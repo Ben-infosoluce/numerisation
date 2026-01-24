@@ -1,28 +1,27 @@
-# Dockerfile minimal pour Laravel + Vite + Tailwind
-FROM php:8.2-fpm
+# Utiliser PHP 8.2 avec extensions nécessaires
+FROM php:8.2-cli
 
-# Installer dépendances système
+# Installer dépendances système et PHP
 RUN apt-get update && apt-get install -y \
-    git unzip curl libzip-dev libpng-dev libonig-dev nodejs npm \
-    && docker-php-ext-install pdo_mysql mbstring zip exif pcntl gd
+    git unzip libpng-dev libjpeg-dev libfreetype6-dev \
+    libonig-dev libxml2-dev zip curl npm \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
-# Installer Composer
+# Installer composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Copier le projet
+# Définir le dossier de l'application
 WORKDIR /var/www/html
 COPY . .
 
-# Permissions pour Laravel
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
-
-# Installer dépendances PHP & Node
+# Installer dépendances Laravel
 RUN composer install --no-dev --optimize-autoloader
-RUN npm install
-RUN npm run build
 
-# Exposer port HTTP
-EXPOSE 9000
+# Installer et builder les assets (Vite)
+RUN npm install && npm run build
 
-# Démarrer PHP-FPM
-CMD ["php-fpm"]
+# Exposer le port HTTP
+EXPOSE 8000
+
+# Commande par défaut : lancer artisan serve
+CMD php artisan serve --host=0.0.0.0 --port=8000
