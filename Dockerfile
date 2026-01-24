@@ -60,7 +60,7 @@ RUN php artisan config:cache \
     && php artisan view:cache
 
 # Exposer port PHP-FPM
-EXPOSE 9000
+EXPOSE 80
 
 # Démarrer PHP-FPM
 CMD ["php-fpm"]
