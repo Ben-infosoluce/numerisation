@@ -1,7 +1,7 @@
-# Dockerfile minimal pour Laravel + Vite + Tailwind
+# Dockerfile pour Laravel + Vite (sans Nginx)
 FROM php:8.2-fpm-alpine
 
-# Installer dépendances système
+# Installer dépendances système avec npm
 RUN apk add --no-cache \
     git \
     unzip \
@@ -11,10 +11,7 @@ RUN apk add --no-cache \
     libzip-dev \
     libpng-dev \
     oniguruma-dev \
-    postgresql-dev \
-    # Nginx pour servir les assets Vite
-    nginx \
-    supervisor
+    postgresql-dev
 
 # Installer extensions PHP
 RUN docker-php-ext-install \
@@ -30,15 +27,17 @@ RUN docker-php-ext-install \
 # Installer Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Configurer Nginx pour servir Laravel et assets Vite
-RUN mkdir -p /run/nginx
-COPY docker/nginx.conf /etc/nginx/nginx.conf
-
-# Configurer Supervisor pour gérer PHP-FPM et Nginx
-COPY docker/supervisor.conf /etc/supervisor/conf.d/supervisor.conf
-
-# Copier le projet
+# Copier uniquement les fichiers nécessaires d'abord (optimisation)
+COPY composer.json composer.lock package.json package-lock.json* /var/www/html/
 WORKDIR /var/www/html
+
+# Installer dépendances PHP
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+
+# Installer dépendances Node (vérifie si package-lock.json existe)
+RUN if [ -f package-lock.json ]; then npm ci --only=production; else npm install --only=production; fi
+
+# Copier le reste de l'application
 COPY . .
 
 # Permissions pour Laravel
@@ -46,21 +45,22 @@ RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/storage \
     && chmod -R 775 /var/www/html/bootstrap/cache
 
-# Installer dépendances PHP
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+# Builder Vite (si vite.config.js existe)
+RUN if [ -f vite.config.js ] || [ -f vite.config.ts ]; then npm run build; fi
 
-# Installer dépendances Node et builder Vite
-RUN npm ci --only=production \
-    && npm run build
-
-# Nettoyer le cache npm pour réduire la taille de l'image
+# Nettoyer
 RUN rm -rf /root/.npm /tmp/*
 
-# Créer le lien de stockage (si nécessaire)
+# Créer le lien de stockage
 RUN php artisan storage:link || true
 
-# Exposer port HTTP (Nginx écoute sur 80)
-EXPOSE 80
+# Nettoyer le cache
+RUN php artisan config:cache \
+    && php artisan route:cache \
+    && php artisan view:cache
 
-# Démarrer avec Supervisor (gère PHP-FPM et Nginx)
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisor.conf"]
+# Exposer port PHP-FPM
+EXPOSE 9000
+
+# Démarrer PHP-FPM
+CMD ["php-fpm"]
