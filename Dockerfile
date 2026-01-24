@@ -1,66 +1,29 @@
-# Dockerfile minimal pour Laravel + Vite + Tailwind
-FROM php:8.2-fpm-alpine
+FROM serversideup/php:8.3-fpm-nginx
 
-# Installer dépendances système
-RUN apk add --no-cache \
-    git \
-    unzip \
-    curl \
-    nodejs \
-    npm \
-    libzip-dev \
-    libpng-dev \
-    oniguruma-dev \
-    postgresql-dev \
-    # Nginx pour servir les assets Vite
-    nginx \
-    supervisor
+ENV PHP_OPCACHE_ENABLE=1
 
-# Installer extensions PHP
-RUN docker-php-ext-install \
-    pdo_mysql \
-    pdo_pgsql \
-    mbstring \
-    zip \
-    exif \
-    pcntl \
-    gd \
-    bcmath
+USER root
 
-# Installer Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+# Install Node.js
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get update \
+    && apt-get install -y nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Configurer Nginx pour servir Laravel et assets Vite
-RUN mkdir -p /run/nginx
-COPY docker/nginx.conf /etc/nginx/nginx.conf
+# Copy application files
+COPY --chown=www-data:www-data . /var/www/html
 
-# Configurer Supervisor pour gérer PHP-FPM et Nginx
-COPY docker/supervisor.conf /etc/supervisor/conf.d/supervisor.conf
+# Switch to non-root user
+USER www-data
 
-# Copier le projet
-WORKDIR /var/www/html
-COPY . .
+# Install dependencies and build
+RUN npm ci \
+    && npm run build \
+    && rm -rf /var/www/html/.npm
 
-# Permissions pour Laravel
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 775 /var/www/html/storage \
-    && chmod -R 775 /var/www/html/bootstrap/cache
+# Install PHP dependencies
+RUN composer install --no-interaction --optimize-autoloader --no-dev
 
-# Installer dépendances PHP
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
-
-# Installer dépendances Node et builder Vite
-RUN npm ci --only=production \
-    && npm run build
-
-# Nettoyer le cache npm pour réduire la taille de l'image
-RUN rm -rf /root/.npm /tmp/*
-
-# Créer le lien de stockage (si nécessaire)
-RUN php artisan storage:link || true
-
-# Exposer port HTTP (Nginx écoute sur 80)
-EXPOSE 80
-
-# Démarrer avec Supervisor (gère PHP-FPM et Nginx)
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisor.conf"]
+# Remove composer cache
+RUN rm -rf /var/www/html/.composer/cache
