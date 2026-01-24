@@ -1,4 +1,6 @@
-const animate = require("tailwindcss-animate")
+// tailwind.config.cjs
+const animate = require("tailwindcss-animate");
+const flowbite = require("flowbite/plugin");
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -24,10 +26,7 @@ module.exports = {
 		},
 		extend: {
 			fontFamily: {
-				poppins: [
-					'Poppins',
-					'sans-serif'
-				]
+				poppins: ['Poppins', 'sans-serif']
 			},
 			colors: {
 				orange_color: '#CA7600',
@@ -36,12 +35,8 @@ module.exports = {
 				ring: 'hsl(var(--ring))',
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
-				// primary: {
-				// 	DEFAULT: 'hsl(var(--primary))',
-				// 	foreground: 'hsl(var(--primary-foreground))'
-				// },
 				primary: {
-					DEFAULT: '#1c2434', // ou la teinte de ton choix
+					DEFAULT: '#1c2434',
 					foreground: 'hsl(var(--primary-foreground))'
 				},
 				secondary: {
@@ -84,36 +79,20 @@ module.exports = {
 			},
 			keyframes: {
 				'accordion-down': {
-					from: {
-						height: 0
-					},
-					to: {
-						height: 'var(--radix-accordion-content-height)'
-					}
+					from: { height: 0 },
+					to: { height: 'var(--radix-accordion-content-height)' }
 				},
 				'accordion-up': {
-					from: {
-						height: 'var(--radix-accordion-content-height)'
-					},
-					to: {
-						height: 0
-					}
+					from: { height: 'var(--radix-accordion-content-height)' },
+					to: { height: 0 }
 				},
 				'collapsible-down': {
-					from: {
-						height: 0
-					},
-					to: {
-						height: 'var(--radix-collapsible-content-height)'
-					}
+					from: { height: 0 },
+					to: { height: 'var(--radix-collapsible-content-height)' }
 				},
 				'collapsible-up': {
-					from: {
-						height: 'var(--radix-collapsible-content-height)'
-					},
-					to: {
-						height: 0
-					}
+					from: { height: 'var(--radix-collapsible-content-height)' },
+					to: { height: 0 }
 				}
 			},
 			animation: {
@@ -124,5 +103,6 @@ module.exports = {
 			}
 		}
 	},
-	plugins: [animate, require('flowbite/plugin'), require("tailwindcss-animate")],
-}
+
+	plugins: [animate, flowbite, animate],
+};
