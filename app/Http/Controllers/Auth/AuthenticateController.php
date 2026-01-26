@@ -12,7 +12,34 @@ class AuthenticateController extends Controller
     //
     public function showLogin(Request $request)
     {
-        return inertia('Auth/Login');
+        // ❌ Utilisateur non connecté
+        if (!Auth::check()) {
+            return Inertia::render('Auth/Login');
+        }
+
+        // ✅ Utilisateur connecté
+        $user = Auth::user();
+        $role = $user->r_user_role->nom_role ?? null;
+
+        // Mapping rôle → lien (équivalent exact de ton JS)
+        $links = [
+            'PoolControle'      => 'pdc',
+            'Caisse'            => 'caisse/data',
+            'Numerisation'      => 'numerisation',
+            'MT1'               => 'minister/mt1',
+            'MT2'               => 'minister/mt2',
+            'Admin'             => 'admin',
+            'Boss'              => 'boss',
+            'Raf'               => 'raf',
+            'Gestionnaire'      => 'gestionnaire/dashboard',
+            'CaisseController'  => 'caisse/controller',
+        ];
+
+        // Route par défaut si rôle inconnu
+        $redirectTo = $links[$role] ?? 'dashboard';
+
+        // 🔁 Redirection Inertia-safe
+        return redirect()->to($redirectTo);
     }
 
     //function d'authentification

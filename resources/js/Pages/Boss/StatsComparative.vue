@@ -3,7 +3,7 @@
     <header class="fixed top-0 left-0 right-0 z-50 bg-white shadow-md p-8 flex items-center justify-center">
         <!-- Logo à gauche -->
         <div class="absolute left-4">
-            <img src="/public/assets/images/logo_frame.svg" alt="Logo" class="h-10 w-auto" />
+            <img src="/public/assets/images/logo_dgttc.jpg" alt="" style=" width: 140px;height: 40px;" />
         </div>
         <!-- Boutons à droite -->
         <div class="absolute center flex space-x-2 cursor-pointer">

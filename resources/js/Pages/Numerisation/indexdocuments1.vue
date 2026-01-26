@@ -245,7 +245,7 @@ function formatLabel(key) {
 <script>
 import { Card, CardContent } from '@/components/ui/card'
 
-import Main from '/resources/js/Pages/Main.vue';
+import CustomMainMain from '/resources/js/Pages/customMain.vue';
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
@@ -262,8 +262,9 @@ import { useForm } from 'vee-validate';
 import { toast, Toaster } from 'vue-sonner';
 
 
+
 export default {
-    layout: Main,
+    layout: CustomMainMain,
     components: {
         Card,
         Table,

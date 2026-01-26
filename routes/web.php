@@ -25,12 +25,16 @@ use App\Http\Controllers\RafCaisseController;
 use App\Http\Controllers\RejetController;
 use App\Http\Controllers\CountryController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\ZipController;
 use App\Models\Caisse;
 
 //Route groupe des utilisteurs non authentifier
+Route::get('/', [AuthenticateController::class, "showLogin"])->name('show.login');
+
 Route::middleware('guest')->group(function () {
     //Route de d'affichage du login 
-    Route::get('/login', [AuthenticateController::class, "showLogin"])->name('show.login');
+    // Route::inertia('/', 'Index')->name('home');
+
     Route::post('user/login', [AuthenticateController::class, "authenticate"])->name("login.user");
     //Route d'affichage de la page Partenaires Register
     // Route::get('/paretainer/register', function () {
@@ -167,7 +171,6 @@ Route::middleware('auth')->group(function () {
 });
 
 
-Route::inertia('/', 'Index')->name('home');
 // Route::get('/', [ClientController::class, "welcome"])->name('home');
 Route::get('/register', [RegisterController::class, "showRegister"])->name('show.register');
 Route::post('/register', [RegisterController::class, "register"])->name('user.register');
@@ -303,6 +306,8 @@ Route::group([
     Route::post('/numerisation/document/update/single', [NumerisationController::class, 'updateSingleField'])->name('numerisation.document.update.single');
     Route::get('/numerisation/documents/dossier/edit/{id_dossier}', [NumerisationController::class, "EditlistDocuments"])->name('numerisation.dossier.edit.documentslist');
     Route::get('numerisation/get/data/modification/{vin}', [NumerisationController::class, "showModificationGetData"])->name('show.modification.numerisation.get.data');
+    Route::get('/archives/zips', [ZipController::class, 'getZips'])->name('zips.get');
+    Route::get('/archives/zips/list', [ZipController::class, 'zipList'])->name('zips.list');
 });
 
 

@@ -1,7 +1,7 @@
 <template>
-    <div class="flex flex-col h-screen dark:bg-gray-800 bg-[#f1f5f9]">
+    <div class="flex flex-col h-screen dark:bg-gray-800 ">
         <!-- Full-width white header -->
-        <Toaster position="top-right" />
+        <!-- <Toaster position="top-right" /> -->
         <header class="bg-white shadow-md w-full z-50">
             <div class="flex mx-auto px-4 lg:py-4 md:py-4 sm:py-4 py-3 text-start justify-between">
                 <div>
@@ -10,47 +10,7 @@
                     <!-- </Link> -->
                     <!-- <h1 class="text-xl font-semibold text-gray-800 ">Your App Name</h1> -->
                 </div>
-                <div v-if="isOpen && $page.component.startsWith('Caisse/')" class="text-center">
-                    <AlertDialog>
-                        <AlertDialogTrigger as-child>
-                            <Button variant="destructive">
-                                ARRETER LA CAISSE
-                                <LockKeyhole />
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                    Font de caisse du jour</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    <div :class="{
-                                        hidden: montantRecuCheck,
-                                        'text-red-600': true,
-                                        'font-bold': true,
-                                    }">
-                                        <label for="totalMontant">Montant total attendu</label>
-                                        <Input id="totalMontant" v-model="fondDeCaisseAttendu" disabled class="my-3" />
-                                    </div>
 
-                                    <Input v-model="fondDeCaisse" class="my-8" placeholder="1 000 000" />
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter class="flex flex-row gap-2">
-                                <AlertDialogCancel> Annuler </AlertDialogCancel>
-                                <div>
-                                    <Button v-if="isOpen" @click="handleClose"
-                                        class="bg-red-800 p-4 rounded hover:bg-red-900 transition duration-300">
-                                        Valider
-                                        <span v-if="loading" class="ml-2 animate-spin">⏳</span>
-                                    </Button>
-                                </div>
-                            </AlertDialogFooter>
-                            <!-- <p v-if="error" class="text-red-600 mt-2 w-full">
-                                ⚠️ {{ error }}
-                            </p> -->
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
 
                 <div class="flex items-center cursor-pointer">
                     <DropdownMenu>
@@ -58,7 +18,7 @@
                             <Avatar>
                                 <AvatarFallback>{{
                                     getInitials()
-                                }}</AvatarFallback>
+                                    }}</AvatarFallback>
                             </Avatar>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent class="w-56">
@@ -97,21 +57,7 @@
             </div>
         </header>
 
-        <div class="flex flex-1 overflow-hidden">
-            <!-- Sidebar toggle button for mobile -->
 
-            <!-- Sidebar -->
-            <aside id="sidebar-multi-level-sidebar"
-                class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0 mt-16"
-                aria-label="Sidebar">
-                <Menu />
-            </aside>
-
-            <!-- Main content -->
-            <div class="flex-1 p-4 sm:ml-64 mt-8 overflow-auto">
-                <slot></slot>
-            </div>
-        </div>
         <div class="flex items-center space-x-2">
             <AlertDialog :open="openPassword">
                 <AlertDialogContent>
@@ -142,6 +88,9 @@
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+        </div>
+        <div class="mt-4 flex-1 overflow-y-auto p-6">
+            <slot></slot>
         </div>
     </div>
 </template>
@@ -272,119 +221,6 @@ function getInitials() {
     return "";
 }
 
-// 🔹 Charger la liste des caisses
-const fetchCaisses = async () => {
-    const data = await store.fetchCurrent();
-    currentCaisse.value = data;
-};
-
-// 🔹 Charger les paiements
-const fetchPaiements = async () => {
-    try {
-        const { data } = await axios.get("/paiement/data/stat", {
-            params: {
-                date: new Date().toISOString().split("T")[0],
-                caisse_id: currentCaisse.value?.caisse_id,
-            },
-        });
-        paiements.value = data;
-        console.log("paiements", paiements.value);
-    } catch (error) {
-        console.error("Erreur lors du chargement des paiements :", error);
-    }
-};
-
-onMounted(() => {
-    fetchPaiements();
-    fetchCaisses();
-});
-// onMounted(fetchPaiements)
-
-// 🔹 Regrouper les données par entité
-const details = computed(() => {
-    const result = { emuci: [], quipux: [], dgtt: [], ministere: [] };
-
-    paiements.value.forEach((p) => {
-        if (p.description) {
-            const lignes = JSON.parse(p.description);
-            lignes.forEach((item) => {
-                switch (item.id_entite) {
-                    case 2:
-                        result.emuci.push(item);
-                        break;
-                    case 3:
-                        result.quipux.push(item);
-                        break;
-                    case 4:
-                        result.dgtt.push(item);
-                        break;
-                    default:
-                        result.ministere.push(item);
-                }
-            });
-        }
-    });
-    return result;
-});
-
-// 🔹 Totaux
-const totals = computed(() => ({
-    emuci: details.value.emuci.reduce((s, i) => s + Number(i.montant), 0),
-    quipux: details.value.quipux.reduce((s, i) => s + Number(i.montant), 0),
-    dgtt: details.value.dgtt.reduce((s, i) => s + Number(i.montant), 0),
-    ministere: details.value.ministere.reduce(
-        (s, i) => s + Number(i.montant),
-        0
-    ),
-}));
-
-// 🔹 Total général
-const totalMontant = computed(
-    () =>
-        totals.value.emuci +
-        totals.value.quipux +
-        totals.value.dgtt +
-        totals.value.ministere
-);
-const currentDate = new Date().toLocaleDateString("fr-FR");
-
-// 🔹 Fonction pour valider le montant reçu
-const handleValidate = async () => {
-    fondDeCaisseAttendu.value = totalMontant.value;
-    try {
-        if (!fondDeCaisse.value) {
-            toast.error("Veuillez entrer le montant reçu avant de valider.");
-            return;
-        }
-
-        if (totalMontant.value !== parseFloat(fondDeCaisse.value)) {
-            montantSaisieCaisse.value = fondDeCaisse.value;
-            // error.value = "Le montant reçu doit correspondre au montant total.";
-            toast.error("Le montant reçu doit correspondre au montant total.");
-            montantRecuCheck.value = false;
-            return;
-        }
-
-        await close({
-            montant_fermeture: fondDeCaisse.value,
-            montant_saisie_caisse:
-                montantSaisieCaisse.value !== undefined &&
-                    montantSaisieCaisse.value !== null &&
-                    montantSaisieCaisse.value !== ""
-                    ? montantSaisieCaisse.value
-                    : fondDeCaisse.value,
-        });
-
-        error.value = null;
-
-        await fetchPaiements(); // Recharger les données si besoin
-    } catch (error) {
-        console.error("Erreur lors de la validation :", error);
-        error.value =
-            error.response?.data?.message ||
-            "Une erreur est survenue lors de la validation.";
-    }
-};
 </script>
 
 <script>

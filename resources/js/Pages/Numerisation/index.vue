@@ -7,13 +7,13 @@
                 Dossiers Numerisations
             </h4>
             <!-- Bouton Nouveau -->
-            <div class="flex items-center space-x-2">
+            <!-- <div class="flex items-center space-x-2">
                 <Link :href="route('show.new.numerisation')">
                 <Button>
                     <Plus class=" w-4 h-4 mr-2" /> Nouvelle Numerisation
                 </Button>
                 </Link>
-            </div>
+            </div> -->
         </div>
 
         <div class="rounded-lg dark:border-gray-700">
@@ -315,9 +315,10 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import BoutonNouveau from "/resources/js/components/BoutonNouveau.vue";
+import customMain from '../customMain.vue'
 
 export default {
-    layout: Main,
+    layout: customMain,
     components: { Pagination },
 };
 </script>
