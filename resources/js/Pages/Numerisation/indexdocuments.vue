@@ -1,7 +1,7 @@
 <template>
     <div class="">
         <div
-            class="sticky top-[-20px] z-10 bg-[#f1f5f9] dark:bg-gray-900 flex flex-col space-y-4 px-8  py-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+            class="sticky top-[-20px] z-40 bg-[#ffffff] dark:bg-gray-900 flex flex-col space-y-4 px-8  py-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
             <h4 class="text-2xl font-bold tracking-tight">
                 Numérisation
             </h4>
@@ -37,7 +37,7 @@
                         class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mt-8">
                         <template v-for="(value, key) in doc" :key="key">
                             <div v-if="!keysToExcludeView.includes(key)"
-                                class="relative z-40 cursor-pointer flex flex-col items-center m-6">
+                                class="relative cursor-pointer flex flex-col items-center m-6">
                                 <!-- Icône PDF -->
                                 <div
                                     class="w-[160px] h-[160px] flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded shadow-md hover:scale-105 transition duration-300">
@@ -128,7 +128,7 @@ function formatLabel(key) {
 <script>
 import { Card, CardContent } from '@/components/ui/card'
 
-import Main from '/resources/js/Pages/Main.vue';
+import CustomMainMain from '/resources/js/Pages/customMain.vue';
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
@@ -145,8 +145,9 @@ import { useForm } from 'vee-validate';
 import { toast, Toaster } from 'vue-sonner';
 
 
+
 export default {
-    layout: Main,
+    layout: CustomMainMain,
     components: {
         Card,
         Table,

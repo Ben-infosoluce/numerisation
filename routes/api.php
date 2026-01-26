@@ -25,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/numerisation/get/data', [NumerisationController::class, "getNumerisationData"]);
     Route::get('/numerisation/documents/dossier/{id_dossier}', [NumerisationController::class, "listDocumentsforApi"]);
     Route::get('/numerisation/get/dossier/data/{vin}', [NumerisationController::class, "showNumerisationGetDataForApi"]);
+    Route::post('/numerisation/ops/save', [NumerisationController::class, "saveOpsNumerisation"]);
 
     // Route::get('/numerisation/documents/dossier/{id_dossier}', [NumerisationController::class, "listDocumentsWithForApi"]);
 });

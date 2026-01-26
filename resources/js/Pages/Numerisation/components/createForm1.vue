@@ -1,7 +1,7 @@
 <template>
     <!-- Header sticky -->
     <div
-        class="sticky top-[-20px] z-10 bg-[#f1f5f9] dark:bg-gray-900 flex flex-col space-y-4 px-8 py-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+        class="sticky top-[-20px] z-10 bg-[#ffffff] dark:bg-gray-900 flex flex-col space-y-4 px-8 py-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <h4 class="text-2xl font-bold tracking-tight">Détails du dossiers</h4>
         <div class="flex items-center space-x-2">
             <Button @click="returnBack()">
@@ -262,10 +262,10 @@
                 </Card>
             </div>
             <div v-if="dossier.statut_numerisation == 1 && dossier.statut == 1"
-                class="sticky top-[-20px] z-10 bg-[#f1f5f9] dark:bg-gray-900 flex flex-col space-y-4 px-8 py-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                class="sticky top-[-20px] z-10 bg-[#ffffff] dark:bg-gray-900 flex flex-col space-y-4 px-8 py-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                 <div></div>
                 <div
-                    class="sticky top-[-20px] z-10 bg-[#f1f5f9] dark:bg-gray-900 flex flex-col space-y-4 px-8 py-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                    class="sticky top-[-20px] z-10 bg-[#ffffff] dark:bg-gray-900 flex flex-col space-y-4 px-8 py-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                     <div></div>
                     <div class="flex items-center space-x-2">
                         <Link v-if="
@@ -365,10 +365,11 @@ async function fetchEntreprise(id) {
 </script>
 
 <script>
-import Main from "/resources/js/Pages/Main.vue";
+import CustomMainMain from "/resources/js/Pages/customMain.vue";
+
 
 export default {
-    layout: Main,
+    layout: CustomMainMain,
 };
 </script>
 

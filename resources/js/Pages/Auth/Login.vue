@@ -1,17 +1,18 @@
 <template>
     <div class="flex min-h-screen justify-center items-center bg-cover bg-center bg-no-repeat"
-        style="background-image: url('/assets/images/login_bg.svg');">
+        style="background-image: url('/assets/images/image-002.jpg');">
         <!-- <Toaster richColors position="top-right" /> -->
         <Toaster position="top-right" />
         <Card class="m-12">
             <div class="w-full lg:grid lg:min-h-[600px] lg:grid-cols-2 xl:min-h-[800px] ">
                 <div
                     class="hidden  lg:flex lg:items-center lg:justify-center bg-cover bg-center bg-no-repeat p-12 bg-white   m-1">
-                    <!-- <Link :href="route('home')">
-                    <img src="../../../../public/assets/images/digi_connect.svg" alt="Image" width="264" height="191"
+                    <!-- <Link :href="route('home')"> -->
+                    <img src="/public/assets/images/logo-site-web-dgttc.jpeg" alt="Image" width="264" height="191"
                         class="mx-auto rounded">
-                    </Link> -->
-                    <h1 class="text-3xl font-bold text-[#CA7600] ">Numerique Connect</h1>
+                    <!-- </Link> -->
+                    <!-- logo-site-web-dgttc.jpeg -->
+                    <!-- <h1 class="text-3xl font-bold text-[#CA7600] ">Digit Post Scann</h1> -->
                 </div>
 
                 <div class="flex items-center justify-center py-12 m-24">
@@ -19,7 +20,7 @@
 
                         <div class="mx-auto grid w-[350px] gap-6 m-12">
                             <div class="grid gap-2 text-center">
-                                <h1 class="text-3xl font-bold text-[#CA7600]">
+                                <h1 class="text-3xl font-bold text-[#068A06]">
                                     Identifiez-vous
                                 </h1>
                             </div>
@@ -50,7 +51,7 @@
                                         </FormItem>
                                     </FormField>
                                 </div>
-                                <Button type="submit" class="w-full my-4 bg-[#CA7600] ">
+                                <Button type="submit" class="w-full my-4 bg-[#068A06] ">
                                     Se connecter
                                 </Button>
                             </div>

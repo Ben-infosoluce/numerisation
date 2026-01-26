@@ -5,10 +5,10 @@
             <div class="flex  mx-auto px-4 lg:py-4 md:py-4 sm:py-4 py-3 text-start justify-between">
 
                 <div>
-                    <Link :href="route('home')">
+                    <!-- <Link :href="route('home')"> -->
                     <img src="/public/assets/images/logo_frame.svg" alt="">
 
-                    </Link>
+                    <!-- </Link> -->
                     <!-- <h1 class="text-xl font-semibold text-gray-800 ">Your App Name</h1> -->
 
                 </div>

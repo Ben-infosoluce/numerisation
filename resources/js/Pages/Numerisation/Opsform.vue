@@ -21,12 +21,12 @@
                         <h2>
                             Statut du dossier :
                             <Badge class="mx-2" :variant="dossier?.statut === 1
-                                    ? 'warning'
-                                    : dossier?.statut === 2
-                                        ? 'success'
-                                        : dossier?.statut === 3
-                                            ? 'error'
-                                            : 'secondary'
+                                ? 'warning'
+                                : dossier?.statut === 2
+                                    ? 'success'
+                                    : dossier?.statut === 3
+                                        ? 'error'
+                                        : 'secondary'
                                 ">
                                 {{
                                     dossier?.statut === 1
@@ -294,7 +294,7 @@ const submitForm = async () => {
 
 <script>
 import { Card } from "@/components/ui/card";
-import Main from "/resources/js/Pages/Main.vue";
+import customMain from "/resources/js/Pages/customMain.vue";
 import { Button } from "@/components/ui/button";
 import { router, useForm } from "@inertiajs/vue3";
 import { MoveLeft } from "lucide-vue-next";
@@ -312,7 +312,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 export default {
-    layout: Main,
+    layout: customMain,
 };
 </script>
 
