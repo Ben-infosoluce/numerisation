@@ -170,3 +170,52 @@
         "element_facturation": "Tâche 3 pour Immatriculation Spéciale"
     }
 ]
+
+
+
+
+"data": {
+    "immatriculation": {
+        "annee_production": "2018",
+        "vin": "VIN000017",
+        "marque": "Peugeot",
+        "modele": "3008",
+        "couleur": "Rouge",
+        "source_energie": "Diesel",
+        "genre_vehicule": "MOTOCYCLETTE",
+        "poids_total_charge": "2133",
+        "poids_utile": "440",
+        "poids_vide": "1693",
+        "puissance_administrative": "11",
+        "places_assises": 5,
+        "nombre_essieux": 2,
+        "date_mise_circulation": "2017-08-26",
+        "num_immatriculation": "QZ-CF885",
+        "num_immatriculation_precedant": "www-AAA999",
+        "date_immatriculation": null,
+        "carrosserie": "titi",
+        "type_technique": "titi",
+        "usage_vehicule": "titi",
+        "code_de_region": "001",
+        "id_client": 40,
+        "r_vehicule_client": {
+            "id": 40,
+            "nom": "Oulai",
+            "prenom": "Jessica",
+            "civilite": null,
+            "adresse": "Abidjan, Abobo",
+            "district_client": "Bouak\u00e9",
+            "prefecture_client": null,
+            "sous_prefecture_client": null,
+            "telephone": "0788899001",
+            "date_naissance": "12-12-1995",
+            "ville_naissance": "Bouak\u00e9",
+            "email": "jessica.oulai@mail.com",
+        },
+        "genre": {
+            "id": 12,
+            "nom": "MOTOCYCLETTE",
+            "nb_plaque": 1
+        },
+    },
+};
