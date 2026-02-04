@@ -18,7 +18,7 @@
                             <Avatar>
                                 <AvatarFallback>{{
                                     getInitials()
-                                    }}</AvatarFallback>
+                                }}</AvatarFallback>
                             </Avatar>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent class="w-56">
@@ -27,7 +27,7 @@
                             <DropdownMenuGroup>
                                 <DropdownMenuItem>
                                     <User class="mr-2 h-4 w-4" />
-                                    <span>Profile</span>
+                                    <span @click="goToArchive()">Archives</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem @click="openPasswordModal">
                                     <Settings class="mr-2 h-4 w-4" />
@@ -220,6 +220,11 @@ function getInitials() {
     }
     return "";
 }
+
+const goToArchive = () => {
+    window.open("/archives/zips/list", "_blank");
+};
+
 
 </script>
 
