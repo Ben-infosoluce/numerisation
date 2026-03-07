@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
+use setasign\Fpdi\Fpdi;
 
 
 // ✅ Pour les règles de validation
@@ -719,59 +719,56 @@ class NumerisationController extends Controller
 
 
     //save immatriculation speciale numerisation
-
     public function saveOpsNumerisation(Request $request)
     {
-        // 1. Définition des règles de validation dans une variable
         $rules = [
             'id_dossier' => 'required|integer|exists:dossiers,id',
-            'formulaire_recensement' => 'required|file|mimes:jpg,jpeg,png,pdf',
-            'fiche_rti' => 'required|file|mimes:jpg,jpeg,png,pdf',
-            'fiche_civio' => 'required|file|mimes:jpg,jpeg,png,pdf',
-            'cni' => 'required|file|mimes:jpg,jpeg,png,pdf',
-            'carte_professionnelle' => 'required|file|mimes:jpg,jpeg,png,pdf',
-            'permis_conduire' => 'required|file|mimes:jpg,jpeg,png,pdf',
-            'documents_douane' => 'required|file|mimes:jpg,jpeg,png,pdf',
-            'fiche_demande_carte_grise' => 'required|file|mimes:jpg,jpeg,png,pdf',
-            'assurance' => 'required|file|mimes:jpg,jpeg,png,pdf',
+            'documents' => 'required|file|mimes:pdf',
         ];
 
         $messages = [
-            'formulaire_recensement.required' => 'Le formulaire de recensement est obligatoire.',
-            'fiche_rti.required' => 'La fiche RTI est obligatoire.',
-            'fiche_civio.required' => 'La fiche CIVIO est obligatoire.',
-            'cni.required' => 'La Carte Nationale d\'Identité (CNI) est obligatoire.',
-            'carte_professionnelle.required' => 'La carte professionnelle est obligatoire.',
-            'permis_conduire.required' => 'Le permis de conduire civil est obligatoire.',
-            'documents_douane.required' => 'Les documents douaniers sont obligatoires.',
-            'fiche_demande_carte_grise.required' => 'La fiche de demande de carte grise est obligatoire.',
-            'assurance.required' => 'L\'assurance en cours de validité est obligatoire.',
+            'documents.required' => 'Le fichier PDF contenant tous les documents est obligatoire.',
         ];
 
-        // Validation
         $validated = $request->validate($rules, $messages);
 
-        // 2. Extraction dynamique des champs fichiers (tout sauf id_dossier)
-        $fileFields = array_keys(array_diff_key($rules, ['id_dossier' => '']));
+        $fileFields = [
+            'formulaire_recensement',
+            'fiche_rti',
+            'fiche_civio',
+            'cni',
+            'carte_professionnelle',
+            'permis_conduire',
+            'documents_douane',
+            'fiche_demande_carte_grise',
+            'assurance',
+        ];
 
         $paths = [];
+        $pdfPath = $request->file('documents')->store('numerisations', 'public');
+        $pdfFullPath = Storage::disk('public')->path($pdfPath);
 
-        // Vérifier si un document existe déjà pour ce dossier
-        $existingDocument = Document::where('id_dossier', $validated['id_dossier'])->first();
+        // Extraire chaque page du PDF
+        $pdf = new Fpdi();
+        $pageCount = $pdf->setSourceFile($pdfFullPath);
 
-        // 3. Stockage des fichiers fournis (Boucle dynamique)
-        foreach ($fileFields as $field) {
-            if ($request->hasFile($field)) {
-                // On stocke le fichier
-                $paths[$field] = $request->file($field)->store('numerisations', 'public');
-            }
+        for ($i = 1; $i <= $pageCount; $i++) {
+            $newPdf = new Fpdi();
+            $newPdf->AddPage();
+            $newPdf->setSourceFile($pdfFullPath);
+            $newPdf->useTemplate($newPdf->importPage($i));
+
+            $field = $fileFields[$i - 1];
+            $newPdfPath = 'numerisations/' . Str::slug($field) . '_' . time() . '.pdf';
+            $newPdf->output(Storage::disk('public')->path($newPdfPath), 'F');
+
+            $paths[$field] = $newPdfPath;
         }
 
-        // --- CRÉATION DU ZIP (Contient TOUS les fichiers validés) ---
+        // Création du ZIP (comme avant)
         $zipFileName = 'dossier_' . $validated['id_dossier'] . '_documents.zip';
         $zipDirectory = 'downloads';
 
-        // Création du dossier de destination si inexistant
         if (!Storage::disk('public')->exists($zipDirectory)) {
             Storage::disk('public')->makeDirectory($zipDirectory);
         }
@@ -780,26 +777,20 @@ class NumerisationController extends Controller
 
         $zip = new \ZipArchive();
         if ($zip->open($zipFilePath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === TRUE) {
-
-            // On boucle sur tous les champs fichiers définis dans la validation
             foreach ($fileFields as $field) {
                 if (isset($paths[$field])) {
                     $fullPath = Storage::disk('public')->path($paths[$field]);
-                    $originalExtension = $request->file($field)->getClientOriginalExtension();
-                    // Renomme le fichier avec le nom du champ
-                    $newName = Str::slug($field) . '.' . $originalExtension;
-                    if (file_exists($fullPath)) {
-                        $zip->addFile($fullPath, $newName);
-                    }
+                    $zip->addFile($fullPath, basename($fullPath));
                 }
             }
             $zip->close();
         }
-        // ------------------------------------------
 
         $dataToSave = array_merge($validated, $paths, [
             'chemin_zip' => $zipDirectory . '/' . $zipFileName
         ]);
+
+        $existingDocument = Document::where('id_dossier', $validated['id_dossier'])->first();
 
         if ($existingDocument) {
             $existingDocument->update($dataToSave);
@@ -807,16 +798,15 @@ class NumerisationController extends Controller
             Document::create($dataToSave);
         }
 
-        // Mise à jour du statut
         $dossier = Dossier::findOrFail($request->id_dossier);
         $dossier->statut_numerisation = 2;
         $dossier->save();
 
         return response()->json([
             'message' => 'Dossier sauvegardé avec succès !',
-            // 'zip_url' => Storage::disk('public')->url($zipDirectory . '/' . $zipFileName)
         ]);
     }
+
 
 
 

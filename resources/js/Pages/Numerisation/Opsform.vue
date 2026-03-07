@@ -174,11 +174,11 @@
                     </div>
 
                     <!-- Bouton Enregistrer -->
-                    <div class="w-full flex flex-row justify-between">
+                    <div class="w-full flex flex-row justify-between mt-10">
                         <div></div>
                         <div>
-                            <Button @click="submitForm" class="bg-amber-800 text-white py-4 px-4 rounded-lg">
-                                Enregistrer
+                            <Button @click="submitForm" class="bg-green-600 text-white py-4 px-4 rounded-lg">
+                                <Check class="w-5 h-5" /> Enregistrers
                             </Button>
                         </div>
                     </div>
@@ -202,6 +202,8 @@
 import { ref } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import { toast } from "vue-sonner";
+import { LogIn, RefreshCcw, ArrowRight, Check } from "lucide-vue-next";
+
 
 const acceptedImageTypes = ".jpeg,.png,.jpg,.webp";
 const props = defineProps({

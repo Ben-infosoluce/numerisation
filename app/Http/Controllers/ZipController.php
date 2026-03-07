@@ -15,6 +15,7 @@ class ZipController extends Controller
     }
     public function getZips(Request $request)
     {
+        // dd($request->all());
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
         $files = Storage::disk('public')->files('downloads');

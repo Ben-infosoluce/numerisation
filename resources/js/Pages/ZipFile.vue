@@ -34,7 +34,9 @@
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead class="w-[50px]">Sélection</TableHead>
+                        <TableHead class="w-[50px]">
+                            <Checkbox :checked="allSelected" @update:checked="toggleSelectAll" />
+                        </TableHead>
                         <TableHead>Nom du fichier</TableHead>
                         <TableHead>Taille</TableHead>
                         <TableHead>Date de création</TableHead>
@@ -45,15 +47,13 @@
                 <TableBody>
                     <TableRow v-for="(zip, index) in paginatedZips" :key="index">
                         <TableCell>
-                            <Checkbox :checked="selectedZips.includes(zip)"
+                            <Checkbox :checked="selectedZips.some(item => item.url === zip.url)"
                                 @update:checked="(checked) => toggleSelect(zip, checked)" />
                         </TableCell>
                         <TableCell>{{ zip.name }}</TableCell>
                         <TableCell>{{ zip.size }}</TableCell>
                         <TableCell>{{ zip.date }}</TableCell>
                         <TableCell>{{ 'Camp BAE Yopougon' }}</TableCell>
-
-
                         <TableCell>
                             <Button variant="outline" size="sm" @click="downloadSingle(zip)">
                                 <Download class="mr-1" />Télécharger
@@ -79,8 +79,9 @@
             </div>
         </div>
     </div>
-    <Toaster richColors position="top-left" />
+    <Toaster richColors position="top-center" />
 </template>
+
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
@@ -99,23 +100,22 @@ const error = ref(null);
 const dateRange = ref({ start: null, end: null });
 const currentPage = ref(1);
 const itemsPerPage = 10;
+const allSelected = ref(false);
 
 // Fonction pour simuler un délai de téléchargement
 const simulateDownload = (file) => {
     return new Promise((resolve, reject) => {
         try {
-            // Créer un lien temporaire pour le téléchargement
             const link = document.createElement('a');
             link.href = file.url;
             link.download = file.name;
             link.target = '_blank';
             link.rel = 'noopener noreferrer';
 
-            // Simuler un délai de téléchargement
             setTimeout(() => {
                 link.click();
                 resolve(file);
-            }, 1500); // 1.5 secondes de simulation
+            }, 1500);
         } catch (err) {
             reject(err);
         }
@@ -210,6 +210,8 @@ const applyDateFilter = () => {
     });
 
     currentPage.value = 1;
+    allSelected.value = false;
+    selectedZips.value = [];
 };
 
 const toggleSelect = (zip, checked) => {
@@ -219,6 +221,16 @@ const toggleSelect = (zip, checked) => {
         }
     } else {
         selectedZips.value = selectedZips.value.filter(item => item.url !== zip.url);
+    }
+    allSelected.value = selectedZips.value.length === paginatedZips.value.length;
+};
+
+const toggleSelectAll = (checked) => {
+    allSelected.value = checked;
+    if (checked) {
+        selectedZips.value = [...paginatedZips.value];
+    } else {
+        selectedZips.value = [];
     }
 };
 
@@ -235,12 +247,14 @@ const totalPages = computed(() => {
 const nextPage = () => {
     if (currentPage.value < totalPages.value) {
         currentPage.value++;
+        allSelected.value = false;
     }
 };
 
 const prevPage = () => {
     if (currentPage.value > 1) {
         currentPage.value--;
+        allSelected.value = false;
     }
 };
 
@@ -260,8 +274,6 @@ const downloadSelected = () => {
 onMounted(() => {
     fetchZips();
 });
-
-
 </script>
 
 
