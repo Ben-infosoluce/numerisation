@@ -1,6 +1,4 @@
 [phases.setup]
-# On ajoute explicitement composer à la liste des paquets Nix
-nixPkgs = ['php82', 'php82Extensions.mbstring', 'php82Extensions.iconv', 'php82Extensions.gd', 'php82Packages.composer']
 cmds = [
     'mkdir -p /usr/local/etc/php/conf.d',
     'echo "upload_max_filesize=40M" > /usr/local/etc/php/conf.d/z-custom.ini',
