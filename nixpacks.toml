@@ -1,15 +1,12 @@
 [phases.setup]
-# (Optionnel) Les limites dans conf.d peuvent ne pas être lues par le CLI
+# On s'assure d'avoir les extensions PHP pour éviter l'erreur de build
+nixPkgs = ['php', 'php82-mbstring', 'php82-iconv'] 
+# On écrit la config d'upload dans le dossier système de PHP
 cmds = [
     'mkdir -p /usr/local/etc/php/conf.d',
-    'echo "upload_max_filesize=40M" > /usr/local/etc/php/conf.d/laravel-limits.ini',
-    'echo "post_max_size=45M" >> /usr/local/etc/php/conf.d/laravel-limits.ini'
+    'echo "upload_max_filesize=40M" > /usr/local/etc/php/conf.d/z-custom.ini',
+    'echo "post_max_size=45M" >> /usr/local/etc/php/conf.d/z-custom.ini'
 ]
 
 [start]
-# On force les limites directement dans la commande PHP
-cmd = "php -c /app/php.ini artisan serve --host=0.0.0.0 --port=80"
-
-
-
-
+cmd = "php artisan serve --host=0.0.0.0 --port=80"
