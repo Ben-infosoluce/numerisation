@@ -1,5 +1,5 @@
 [phases.setup]
-# On crée un fichier de config PHP personnalisé lors de l'installation
+# (Optionnel) Les limites dans conf.d peuvent ne pas être lues par le CLI
 cmds = [
     'mkdir -p /usr/local/etc/php/conf.d',
     'echo "upload_max_filesize=40M" > /usr/local/etc/php/conf.d/laravel-limits.ini',
@@ -7,5 +7,9 @@ cmds = [
 ]
 
 [start]
-# Ta commande de démarrage actuelle
-cmd = "php artisan serve --host=0.0.0.0 --port=80"
+# On force les limites directement dans la commande PHP
+cmd = "php -d upload_max_filesize=40M -d post_max_size=45M artisan serve --host=0.0.0.0 --port=80"
+
+
+
+
