@@ -69,106 +69,25 @@
                     <!-- Informations véhicule -->
                     <div>
                         <h1 class="font-semibold mt-4 mb-5">
-                            Informations Véhicule
+                            Numérisation Globale
                         </h1>
-                        <div class="w-full grid gap-4 md:gap-8 lg:grid-cols-3 xl:grid-cols-3">
-                            <!-- Formulaire de recensement (obligatoire) -->
-                            <div class="space-y-2">
-                                <p>Formulaire de recensement *</p>
-                                <CustomFileUpload dropText="Formulaire de recensement" previewText="Fichier sélectionné"
-                                    :accept="acceptedImageTypes" @input="
-                                        form.formulaire_recensement =
-                                        $event.target.files[0]
-                                        " previewPlaceholder="Aucun fichier sélectionné" :dossier="dossier"
-                                    @file-selected="handleFile" modal-title="Détails du formulaire de recensement" />
-                            </div>
-
-                            <!-- Fiche de Réception à Titre Isolé (RTI) (obligatoire) -->
-                            <div class="space-y-2">
-                                <p>Fiche de Réception à Titre Isolé (RTI) *</p>
-                                <CustomFileUpload dropText="Fiche RTI" previewText="Fichier sélectionné"
-                                    :accept="acceptedImageTypes" @input="
-                                        form.fiche_rti = $event.target.files[0]
-                                        " previewPlaceholder="Aucun fichier sélectionné" :dossier="dossier"
-                                    @file-selected="handleFile" modal-title="Détails de la fiche RTI" />
-                            </div>
-
-                            <!-- Fiche CIVIO (obligatoire) -->
-                            <div class="space-y-2">
-                                <p>Fiche CIVIO *</p>
-                                <CustomFileUpload dropText="Fiche CIVIO" previewText="Fichier sélectionné"
-                                    :accept="acceptedImageTypes" @input="
-                                        form.fiche_civio =
-                                        $event.target.files[0]
-                                        " previewPlaceholder="Aucun fichier sélectionné" :dossier="dossier"
-                                    @file-selected="handleFile" modal-title="Détails de la fiche CIVIO" />
-                            </div>
-
-                            <!-- Carte Nationale d’Identité (CNI) (obligatoire) -->
-                            <div class="space-y-2">
-                                <p>Carte Nationale d’Identité (CNI) *</p>
-                                <CustomFileUpload dropText="CNI" previewText="Fichier sélectionné"
-                                    :accept="acceptedImageTypes" @input="form.cni = $event.target.files[0]"
-                                    previewPlaceholder="Aucun fichier sélectionné" :dossier="dossier"
-                                    @file-selected="handleFile" modal-title="Détails de la CNI" />
-                            </div>
-
-                            <!-- Carte professionnelle (obligatoire) -->
-                            <div class="space-y-2">
-                                <p>Carte professionnelle *</p>
-                                <CustomFileUpload dropText="Carte professionnelle" previewText="Fichier sélectionné"
-                                    :accept="acceptedImageTypes" @input="
-                                        form.carte_professionnelle =
-                                        $event.target.files[0]
-                                        " previewPlaceholder="Aucun fichier sélectionné" :dossier="dossier"
-                                    @file-selected="handleFile" modal-title="Détails de la carte professionnelle" />
-                            </div>
-
-                            <!-- Permis de conduire civil (obligatoire) -->
-                            <div class="space-y-2">
-                                <p>Permis de conduire civil *</p>
-                                <CustomFileUpload dropText="Permis de conduire" previewText="Fichier sélectionné"
-                                    :accept="acceptedImageTypes" @input="
-                                        form.permis_conduire =
-                                        $event.target.files[0]
-                                        " previewPlaceholder="Aucun fichier sélectionné" :dossier="dossier"
-                                    @file-selected="handleFile" modal-title="Détails du permis de conduire" />
-                            </div>
-
-                            <!-- Documents douaniers (obligatoire) -->
-                            <div class="space-y-2">
-                                <p>
-                                    Documents douaniers (quittance, bon à
-                                    enlever, déclaration) *
+                        <div class="w-full">
+                            <!-- Fichier Global (10 pages) -->
+                            <div class="space-y-4">
+                                <p class="text-lg font-medium">Fichier de numérisation global (Scannez les 12 pages ensemble) *</p>
+                                <CustomFileUpload 
+                                    dropText="Déposez le fichier PDF contenant les 12 pages ici" 
+                                    previewText="Fichier global sélectionné"
+                                    accept="application/pdf" 
+                                    @input="form.global_scan = $event.target.files[0]" 
+                                    previewPlaceholder="Aucun fichier sélectionné" 
+                                    :dossier="dossier"
+                                    @file-selected="handleFile" 
+                                    modal-title="Aperçu du scan global" 
+                                />
+                                <p class="text-sm text-gray-500 italic">
+                                    Note : Le fichier doit contenir les 12 pièces dans l'ordre (1. Recensement, 2. Permis, 3. Bon à enlever, 4. Déclaration D3, 5. Carte Grise, 6. Carte Pro, 7. Identification, 8. Pièce ID Propriétaire, 9. Quittance Douanes, 10. RTI, 11. Assurance, 12. Visite Technique).
                                 </p>
-                                <CustomFileUpload dropText="Documents douaniers" previewText="Fichier sélectionné"
-                                    :accept="acceptedImageTypes" @input="
-                                        form.documents_douane =
-                                        $event.target.files[0]
-                                        " previewPlaceholder="Aucun fichier sélectionné" :dossier="dossier"
-                                    @file-selected="handleFile" modal-title="Détails des documents douaniers" />
-                            </div>
-
-                            <!-- Fiche de demande de carte grise (obligatoire) -->
-                            <div class="space-y-2">
-                                <p>Fiche de demande de carte grise *</p>
-                                <CustomFileUpload dropText="Fiche de demande de carte grise"
-                                    previewText="Fichier sélectionné" :accept="acceptedImageTypes" @input="
-                                        form.fiche_demande_carte_grise =
-                                        $event.target.files[0]
-                                        " previewPlaceholder="Aucun fichier sélectionné" :dossier="dossier"
-                                    @file-selected="handleFile"
-                                    modal-title="Détails de la fiche de demande de carte grise" />
-                            </div>
-
-                            <!-- Assurance en cours de validité (obligatoire) -->
-                            <div class="space-y-2">
-                                <p>Assurance en cours de validité *</p>
-                                <CustomFileUpload dropText="Assurance en cours de validité"
-                                    previewText="Fichier sélectionné" :accept="acceptedImageTypes" @input="
-                                        form.assurance = $event.target.files[0]
-                                        " previewPlaceholder="Aucun fichier sélectionné" :dossier="dossier"
-                                    @file-selected="handleFile" modal-title="Détails de l'assurance" />
                             </div>
                         </div>
                     </div>
@@ -204,8 +123,6 @@ import { useForm } from "@inertiajs/vue3";
 import { toast } from "vue-sonner";
 import { LogIn, RefreshCcw, ArrowRight, Check } from "lucide-vue-next";
 
-
-const acceptedImageTypes = ".jpeg,.png,.jpg,.webp";
 const props = defineProps({
     dossier: Object,
     client: Object,
@@ -214,16 +131,7 @@ const props = defineProps({
 const isLoading = ref(false);
 const form = useForm({
     id_dossier: props.dossier.id,
-    // Nouveaux champs obligatoires
-    formulaire_recensement: null, // Formulaire de recensement
-    fiche_rti: null, // Fiche de Réception à Titre Isolé (RTI)
-    fiche_civio: null, // Fiche CIVIO
-    cni: null, // Carte Nationale d’Identité (CNI)
-    carte_professionnelle: null, // Carte professionnelle
-    permis_conduire: null, // Permis de conduire civil
-    documents_douane: null, // Documents émis par la douane (quittance, bon à enlever, déclaration)
-    fiche_demande_carte_grise: null, // Fiche de demande de carte grise
-    assurance: null, // Assurance en cours de validité
+    global_scan: null,
     // Timestamps
     created_at: Date.now(),
     updated_at: Date.now(),
@@ -231,40 +139,9 @@ const form = useForm({
 
 const submitForm = async () => {
     try {
-        // Liste de tous les champs obligatoires
-        const requiredFields = [
-            {
-                value: form.formulaire_recensement,
-                name: "Formulaire de recensement",
-            },
-            {
-                value: form.fiche_rti,
-                name: "Fiche de Réception à Titre Isolé (RTI)",
-            },
-            { value: form.fiche_civio, name: "Fiche CIVIO" },
-            { value: form.cni, name: "Carte Nationale d’Identité (CNI)" },
-            {
-                value: form.carte_professionnelle,
-                name: "Carte professionnelle",
-            },
-            { value: form.permis_conduire, name: "Permis de conduire civil" },
-            {
-                value: form.documents_douane,
-                name: "Documents émis par la douane",
-            },
-            {
-                value: form.fiche_demande_carte_grise,
-                name: "Fiche de demande de carte grise",
-            },
-            { value: form.assurance, name: "Assurance en cours de validité" },
-        ];
-
-        // Vérification des champs obligatoires
-        for (const field of requiredFields) {
-            if (!field.value) {
-                toast.error(`${field.name} est obligatoire.`);
-                return;
-            }
+        if (!form.global_scan) {
+            toast.error("Le fichier de numérisation global est obligatoire.");
+            return;
         }
 
         // Préparation des données pour l'envoi
@@ -304,15 +181,6 @@ import { Toaster, toast } from "vue-sonner";
 import { Badge } from "@/components/ui/badge";
 import CustomFileUpload from "@/components/CustomFileUpload.vue";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectLabel,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 export default {
     layout: customMain,
 };

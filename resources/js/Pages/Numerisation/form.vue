@@ -22,12 +22,12 @@
                     <h2>
                         Statut du dossier :
                         <Badge class="mx-2" :variant="dossier?.statut === 1
-                                ? 'warning'
-                                : dossier?.statut === 2
-                                    ? 'success'
-                                    : dossier?.statut === 3
-                                        ? 'error'
-                                        : 'secondary'
+                            ? 'warning'
+                            : dossier?.statut === 2
+                                ? 'success'
+                                : dossier?.statut === 3
+                                    ? 'error'
+                                    : 'secondary'
                             ">
                             {{
                                 dossier?.statut === 1

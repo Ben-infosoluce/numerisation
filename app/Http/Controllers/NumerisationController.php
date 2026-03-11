@@ -18,6 +18,7 @@ use Intervention\Image\ImageManager;
 use setasign\Fpdi\Fpdi;
 
 
+
 // ✅ Pour les règles de validation
 
 class NumerisationController extends Controller
@@ -193,8 +194,6 @@ class NumerisationController extends Controller
         ]);
     }
 
-
-
     public function EditlistDocuments($id_dossier)
     {
         // Charger tous les documents avec leurs dossiers associés
@@ -318,8 +317,6 @@ class NumerisationController extends Controller
         ]);
     }
 
-
-
     public function showNumerisationGetDataForApi($vin)
     {
         // 🔵 1. Charger le dossier principal
@@ -361,8 +358,6 @@ class NumerisationController extends Controller
             'new' => $new,
         ]);
     }
-
-
 
     public function showNumerisationGetDataWithPost($vin)
     {
@@ -720,192 +715,208 @@ class NumerisationController extends Controller
     //save immatriculation speciale numerisation
     public function saveOpsNumerisation(Request $request)
     {
-        // 1. Définition des règles de validation dans une variable
-        $rules = [
+
+        $request->validate([
             'id_dossier' => 'required|integer|exists:dossiers,id',
-            'formulaire_recensement' => 'required|file|mimes:jpg,jpeg,png,pdf',
-            'fiche_rti' => 'required|file|mimes:jpg,jpeg,png,pdf',
-            'fiche_civio' => 'required|file|mimes:jpg,jpeg,png,pdf',
-            'cni' => 'required|file|mimes:jpg,jpeg,png,pdf',
-            'carte_professionnelle' => 'required|file|mimes:jpg,jpeg,png,pdf',
-            'permis_conduire' => 'required|file|mimes:jpg,jpeg,png,pdf',
-            'documents_douane' => 'required|file|mimes:jpg,jpeg,png,pdf',
-            'fiche_demande_carte_grise' => 'required|file|mimes:jpg,jpeg,png,pdf',
-            'assurance' => 'required|file|mimes:jpg,jpeg,png,pdf',
+            'global_scan' => 'required|file|mimes:pdf',
+        ]);
+
+
+        $id_dossier = $request->id_dossier;
+        $file = $request->file('global_scan');
+        $tempPath = $file->getRealPath();
+
+
+        // Champs dans l'ordre exact (12 pages pour 12 champs)
+        $fields = [
+            'formulaire_recensement',      // Page 1
+            'permis_conduire',             // Page 2
+            'bon_a_enlever',               // Page 3
+            'declaration_d3',              // Page 4
+            'fiche_demande_carte_grise',   // Page 5
+            'carte_professionnelle',       // Page 6
+            'fiche_civio',                 // Page 7
+            'cni',                         // Page 8
+            'quittance_douane',            // Page 9
+            'fiche_rti',                   // Page 10
+            'assurance',                   // Page 11
+            'visite_technique',            // Page 12
         ];
-
-        $messages = [
-            'formulaire_recensement.required' => 'Le formulaire de recensement est obligatoire.',
-            'fiche_rti.required' => 'La fiche RTI est obligatoire.',
-            'fiche_civio.required' => 'La fiche CIVIO est obligatoire.',
-            'cni.required' => 'La Carte Nationale d\'Identité (CNI) est obligatoire.',
-            'carte_professionnelle.required' => 'La carte professionnelle est obligatoire.',
-            'permis_conduire.required' => 'Le permis de conduire civil est obligatoire.',
-            'documents_douane.required' => 'Les documents douaniers sont obligatoires.',
-            'fiche_demande_carte_grise.required' => 'La fiche de demande de carte grise est obligatoire.',
-            'assurance.required' => 'L\'assurance en cours de validité est obligatoire.',
-        ];
-
-        // Validation
-        $validated = $request->validate($rules, $messages);
-
-        // 2. Extraction dynamique des champs fichiers (tout sauf id_dossier)
-        $fileFields = array_keys(array_diff_key($rules, ['id_dossier' => '']));
 
         $paths = [];
-
-        // Vérifier si un document existe déjà pour ce dossier
-        $existingDocument = Document::where('id_dossier', $validated['id_dossier'])->first();
-
-        // 3. Stockage des fichiers fournis (Boucle dynamique)
-        foreach ($fileFields as $field) {
-            if ($request->hasFile($field)) {
-                // On stocke le fichier
-                $paths[$field] = $request->file($field)->store('numerisations', 'public');
-            }
-        }
-
-        // --- CRÉATION DU ZIP (Contient TOUS les fichiers validés) ---
-        $zipFileName = 'dossier_' . $validated['id_dossier'] . '_documents.zip';
         $zipDirectory = 'downloads';
-
-        // Création du dossier de destination si inexistant
         if (!Storage::disk('public')->exists($zipDirectory)) {
             Storage::disk('public')->makeDirectory($zipDirectory);
         }
+        
 
+        $zipFileName = 'dossier_' . $id_dossier . '_documents.zip';
         $zipFilePath = Storage::disk('public')->path($zipDirectory . '/' . $zipFileName);
-
         $zip = new \ZipArchive();
-        if ($zip->open($zipFilePath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === TRUE) {
+        $zipOpened = $zip->open($zipFilePath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
 
-            // On boucle sur tous les champs fichiers définis dans la validation
-            foreach ($fileFields as $field) {
-                if (isset($paths[$field])) {
-                    $fullPath = Storage::disk('public')->path($paths[$field]);
-                    $originalExtension = $request->file($field)->getClientOriginalExtension();
-                    // Renomme le fichier avec le nom du champ
-                    $newName = Str::slug($field) . '.' . $originalExtension;
-                    if (file_exists($fullPath)) {
-                        $zip->addFile($fullPath, $newName);
-                    }
+       
+        try {
+            $pdf = new Fpdi();
+            $pageCount = $pdf->setSourceFile($tempPath);
+
+            $currentPage = 1;
+            foreach ($fields as $field) {
+                if ($currentPage > $pageCount) break;
+
+                $newPdf = new Fpdi();
+                $newPdf->setSourceFile($tempPath);
+
+                // Mappage 1:1 strict pour chaque page
+                $template = $newPdf->importPage($currentPage);
+                $size = $newPdf->getTemplateSize($template);
+                $newPdf->addPage($size['orientation'], [$size['width'], $size['height']]);
+                $newPdf->useTemplate($template);
+                
+                $fileName = 'numerisations/' . Str::uuid() . '_' . $field . '.pdf';
+                $output = $newPdf->Output('S'); // Output as string
+                Storage::disk('public')->put($fileName, $output);
+                $paths[$field] = $fileName;
+
+                if ($zipOpened === TRUE) {
+                    $zip->addFromString(Str::slug($field) . '.pdf', $output);
                 }
+                
+                $currentPage++;
             }
-            $zip->close();
+
+            if ($zipOpened === TRUE) {
+                $zip->close();
+            }
+
+            // Sauvegarde en base
+            $existingDocument = Document::where('id_dossier', $id_dossier)->first();
+            $dataToSave = array_merge($paths, [
+                'id_dossier' => $id_dossier,
+                'chemin_zip' => $zipDirectory . '/' . $zipFileName
+            ]);
+
+            if ($existingDocument) {
+                $existingDocument->update($dataToSave);
+            } else {
+                Document::create($dataToSave);
+            }
+
+            // Mettre à jour le statut du dossier
+            $dossier = Dossier::findOrFail($id_dossier);
+            $dossier->statut_numerisation = 2;
+            $dossier->save();
+
+            return response()->json(['message' => 'Numérisation traitée et scindée (12 pages) avec succès !']);
+
+        } catch (\Exception $e) {
+            Log::error("Erreur lors du découpage PDF (12 pages) : " . $e->getMessage());
+            return response()->json(['message' => 'Erreur lors du traitement du fichier PDF - ' . $e->getMessage()], 500);
         }
-        // ------------------------------------------
-
-        $dataToSave = array_merge($validated, $paths, [
-            'chemin_zip' => $zipDirectory . '/' . $zipFileName
-        ]);
-
-        if ($existingDocument) {
-            $existingDocument->update($dataToSave);
-        } else {
-            Document::create($dataToSave);
-        }
-
-        // Mise à jour du statut
-        $dossier = Dossier::findOrFail($request->id_dossier);
-        $dossier->statut_numerisation = 2;
-        $dossier->save();
-
-        return response()->json([
-            'message' => 'Dossier sauvegardé avec succès !',
-            // 'zip_url' => Storage::disk('public')->url($zipDirectory . '/' . $zipFileName)
-        ]);
     }
+
     //save immatriculation speciale numerisation via api
     public function saveOpsNumerisationApi(Request $request)
     {
-        $rules = [
+
+        $request->validate([
             'id_dossier' => 'required|integer|exists:dossiers,id',
-            'documents' => 'required|file|mimes:pdf',
-        ];
+            'global_scan' => 'required|file|mimes:pdf',
+        ]);
 
-        $messages = [
-            'documents.required' => 'Le fichier PDF contenant tous les documents est obligatoire.',
-        ];
 
-        $validated = $request->validate($rules, $messages);
+        $id_dossier = $request->id_dossier;
+        $file = $request->file('global_scan');
+        $tempPath = $file->getRealPath();
 
-        $fileFields = [
-            'formulaire_recensement',
-            'fiche_rti',
-            'fiche_civio',
-            'cni',
-            'carte_professionnelle',
-            'permis_conduire',
-            'documents_douane',
-            'fiche_demande_carte_grise',
-            'assurance',
+
+        // Champs dans l'ordre exact (12 pages pour 12 champs)
+        $fields = [
+            'formulaire_recensement',      // Page 1
+            'permis_conduire',             // Page 2
+            'bon_a_enlever',               // Page 3
+            'declaration_d3',              // Page 4
+            'fiche_demande_carte_grise',   // Page 5
+            'carte_professionnelle',       // Page 6
+            'fiche_civio',                 // Page 7
+            'cni',                         // Page 8
+            'quittance_douane',            // Page 9
+            'fiche_rti',                   // Page 10
+            'assurance',                   // Page 11
+            'visite_technique',            // Page 12
         ];
 
         $paths = [];
-        $pdfPath = $request->file('documents')->store('numerisations', 'public');
-        $pdfFullPath = Storage::disk('public')->path($pdfPath);
-
-        // Extraire chaque page du PDF
-        $pdf = new Fpdi();
-        $pageCount = $pdf->setSourceFile($pdfFullPath);
-
-        for ($i = 1; $i <= $pageCount; $i++) {
-            $newPdf = new Fpdi();
-            $newPdf->AddPage();
-            $newPdf->setSourceFile($pdfFullPath);
-            $newPdf->useTemplate($newPdf->importPage($i));
-
-            $field = $fileFields[$i - 1];
-            $newPdfPath = 'numerisations/' . Str::slug($field) . '_' . time() . '.pdf';
-            $newPdf->output(Storage::disk('public')->path($newPdfPath), 'F');
-
-            $paths[$field] = $newPdfPath;
-        }
-
-        // Création du ZIP (comme avant)
-        $zipFileName = 'dossier_' . $validated['id_dossier'] . '_documents.zip';
         $zipDirectory = 'downloads';
-
         if (!Storage::disk('public')->exists($zipDirectory)) {
             Storage::disk('public')->makeDirectory($zipDirectory);
         }
+        
 
+        $zipFileName = 'dossier_' . $id_dossier . '_documents.zip';
         $zipFilePath = Storage::disk('public')->path($zipDirectory . '/' . $zipFileName);
-
         $zip = new \ZipArchive();
-        if ($zip->open($zipFilePath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === TRUE) {
-            foreach ($fileFields as $field) {
-                if (isset($paths[$field])) {
-                    $fullPath = Storage::disk('public')->path($paths[$field]);
-                    $zip->addFile($fullPath, basename($fullPath));
+        $zipOpened = $zip->open($zipFilePath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+       
+        try {
+            $pdf = new Fpdi();
+            $pageCount = $pdf->setSourceFile($tempPath);
+
+            $currentPage = 1;
+            foreach ($fields as $field) {
+                if ($currentPage > $pageCount) break;
+
+                $newPdf = new Fpdi();
+                $newPdf->setSourceFile($tempPath);
+
+                // Mappage 1:1 strict pour chaque page
+                $template = $newPdf->importPage($currentPage);
+                $size = $newPdf->getTemplateSize($template);
+                $newPdf->addPage($size['orientation'], [$size['width'], $size['height']]);
+                $newPdf->useTemplate($template);
+                
+                $fileName = 'numerisations/' . Str::uuid() . '_' . $field . '.pdf';
+                $output = $newPdf->Output('S'); // Output as string
+                Storage::disk('public')->put($fileName, $output);
+                $paths[$field] = $fileName;
+
+                if ($zipOpened === TRUE) {
+                    $zip->addFromString(Str::slug($field) . '.pdf', $output);
                 }
+                
+                $currentPage++;
             }
-            $zip->close();
+
+            if ($zipOpened === TRUE) {
+                $zip->close();
+            }
+
+            // Sauvegarde en base
+            $existingDocument = Document::where('id_dossier', $id_dossier)->first();
+            $dataToSave = array_merge($paths, [
+                'id_dossier' => $id_dossier,
+                'chemin_zip' => $zipDirectory . '/' . $zipFileName
+            ]);
+
+            if ($existingDocument) {
+                $existingDocument->update($dataToSave);
+            } else {
+                Document::create($dataToSave);
+            }
+
+            // Mettre à jour le statut du dossier
+            $dossier = Dossier::findOrFail($id_dossier);
+            $dossier->statut_numerisation = 2;
+            $dossier->save();
+
+            return response()->json(['message' => 'Numérisation traitée et scindée (12 pages) avec succès !']);
+
+        } catch (\Exception $e) {
+            Log::error("Erreur lors du découpage PDF (12 pages) : " . $e->getMessage());
+            return response()->json(['message' => 'Erreur lors du traitement du fichier PDF - ' . $e->getMessage()], 500);
         }
-
-        $dataToSave = array_merge($validated, $paths, [
-            'chemin_zip' => $zipDirectory . '/' . $zipFileName
-        ]);
-
-        $existingDocument = Document::where('id_dossier', $validated['id_dossier'])->first();
-
-        if ($existingDocument) {
-            $existingDocument->update($dataToSave);
-        } else {
-            Document::create($dataToSave);
-        }
-
-        $dossier = Dossier::findOrFail($request->id_dossier);
-        $dossier->statut_numerisation = 2;
-        $dossier->save();
-
-        return response()->json([
-            'message' => 'Dossier sauvegardé avec succès !',
-        ]);
     }
-
-
-
 
     public function savePostNumerisation(Request $request)
     {
