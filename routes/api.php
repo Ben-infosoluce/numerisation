@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\NumerisationController;
+use App\Http\Controllers\PdcController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -28,4 +29,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/numerisation/ops/save', [NumerisationController::class, "saveOpsNumerisationApi"]);
 
     // Route::get('/numerisation/documents/dossier/{id_dossier}', [NumerisationController::class, "listDocumentsWithForApi"]);
+
+
+    Route::post('/fds/ops', [PdcController::class, 'SaveFdsOps']);
+    Route::post('/fds/ops/update', [PdcController::class, 'updateFdsOps']);
 });

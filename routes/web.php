@@ -26,10 +26,9 @@ use App\Http\Controllers\RejetController;
 use App\Http\Controllers\CountryController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ZipController;
-use App\Models\Caisse;
 
 //Route groupe des utilisteurs non authentifier
-Route::get('/', [AuthenticateController::class, "showLogin"])->name('show.login')->name('login');
+Route::get('/', [AuthenticateController::class, "showLogin"])->name('login');
 
 Route::middleware('guest')->group(function () {
     //Route de d'affichage du login 
