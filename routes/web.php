@@ -434,3 +434,12 @@ Route::group(
 //client 
 Route::post('/', [ClientController::class, "clientLogin"])->name('client.login');
 Route::post('/client/chrono', [ClientController::class, "chrono"])->name('client.chrono');
+
+Route::get('/debug-php-limits', function () {
+    return response()->json([
+        'upload_max_filesize' => ini_get('upload_max_filesize'),
+        'post_max_size' => ini_get('post_max_size'),
+        'memory_limit' => ini_get('memory_limit'),
+        'sapi' => php_sapi_name(),
+    ]);
+});
