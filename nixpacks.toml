@@ -1,2 +1,3 @@
 [start]
-cmd = "php artisan serve --host=0.0.0.0 --port=80"
+# On force les réglages au lancement du serveur Artisan
+cmd = "php -d upload_max_filesize=40M -d post_max_size=45M artisan serve --host=0.0.0.0 --port=80"
