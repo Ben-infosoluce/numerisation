@@ -1,3 +1,12 @@
+[phases.setup]
+# On utilise les noms de paquets standard pour Nix
+nixPkgs = ['php82', 'php82Extensions.mbstring', 'php82Extensions.iconv', 'php82Extensions.gd']
+cmds = [
+    'mkdir -p /usr/local/etc/php/conf.d',
+    'echo "upload_max_filesize=40M" > /usr/local/etc/php/conf.d/z-custom.ini',
+    'echo "post_max_size=45M" >> /usr/local/etc/php/conf.d/z-custom.ini'
+]
+
 [start]
-# On force les réglages au lancement du serveur Artisan
+# On force les limites au cas où le ini soit ignoré par le cli-server
 cmd = "php -d upload_max_filesize=40M -d post_max_size=45M artisan serve --host=0.0.0.0 --port=80"
