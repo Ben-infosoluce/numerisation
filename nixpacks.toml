@@ -1,2 +1,11 @@
+[phases.setup]
+# On crée un fichier de config PHP personnalisé lors de l'installation
+cmds = [
+    'mkdir -p /usr/local/etc/php/conf.d',
+    'echo "upload_max_filesize=40M" > /usr/local/etc/php/conf.d/laravel-limits.ini',
+    'echo "post_max_size=45M" >> /usr/local/etc/php/conf.d/laravel-limits.ini'
+]
+
 [start]
+# Ta commande de démarrage actuelle
 cmd = "php artisan serve --host=0.0.0.0 --port=80"
