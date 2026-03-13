@@ -1,5 +1,5 @@
 <template>
-    <div class="h-full px-3 py-4 overflow-y-auto  dark:bg-gray-800 bg-[#1C2434]">
+    <div class="h-full px-3 py-4 overflow-y-auto  dark:bg-gray-800 bg-[#01182f] rounded-lg">
         <!-- Pool de Controle -->
         <template v-if="user_type == 'PoolControle'">
             <ul class="space-y-4 font-medium mt-6" v-if="true">
@@ -15,7 +15,7 @@
                 <li :class="{ 'active-page': $page.component.startsWith('Pdc/Immatriculation') }"
                     v-if="user_permissions.includes(1)">
                     <!-- <Link :href="route('show.pdc.immatriculation')"> -->
-                    <Link :href="route('show.pdc.immatriculation.select')">
+                    <Link :href="route('show.pdc.immatriculation')">
                         <a
                             class="flex items-center p-2 text-white  hover:text-black  rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
                             <svg class="flex-shrink-0 w-4 h-4 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
@@ -29,7 +29,7 @@
                         </a>
                     </Link>
                 </li>
-                <li :class="{ 'active-page': $page.component.startsWith('Pdc/ReImmatriculation') }"
+                <!-- <li :class="{ 'active-page': $page.component.startsWith('Pdc/ReImmatriculation') }"
                     v-if="user_permissions.includes(2)">
                     <Link :href="route('show.pdc.re.immatriculation.select')">
                         <a
@@ -74,7 +74,7 @@
                             <span class="flex-1 ms-3 whitespace-nowrap">Duplicata</span>
                         </a>
                     </Link>
-                </li>
+                </li> -->
             </ul>
         </template>
 

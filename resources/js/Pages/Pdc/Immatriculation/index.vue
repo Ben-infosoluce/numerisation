@@ -2,7 +2,7 @@
     <div class="flex flex-col space-y-4 mx-8 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <!-- Titre -->
         <h4 class="text-2xl font-bold tracking-tight">
-            Opérations Spéciales
+            Opérations Spéciales - FDS
         </h4>
 
         <!-- Bouton Nouveau -->
