@@ -1,29 +1,57 @@
-FROM serversideup/php:8.3-fpm-nginx
+# Stage 1: Build frontend assets
+FROM node:20-alpine AS build-stage
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
 
-ENV PHP_OPCACHE_ENABLE=1
+# Stage 2: Production PHP & Nginx
+FROM php:8.2-fpm-alpine
 
-USER root
+# Install system dependencies
+RUN apk add --no-cache \
+    nginx \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    zip \
+    libzip-dev \
+    unzip \
+    git \
+    bash \
+    icu-dev \
+    oniguruma-dev \
+    linux-headers
 
-# Install Node.js
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get update \
-    && apt-get install -y nodejs \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# Install PHP extensions
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) gd pdo_mysql mbstring zip exif pcntl bcmath intl
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /app
 
 # Copy application files
-COPY --chown=www-data:www-data . /var/www/html
+COPY . .
 
-# Switch to non-root user
-USER www-data
+# Copy built assets from build-stage
+COPY --from=build-stage /app/public/build ./public/build
 
-# Install dependencies and build
-RUN npm ci \
-    && npm run build \
-    && rm -rf /var/www/html/.npm
+# Copy configurations
+COPY docker/php.ini /usr/local/etc/php/conf.d/app-php.ini
+COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 
 # Install PHP dependencies
-RUN composer install --no-interaction --optimize-autoloader --no-dev
+RUN composer install --no-dev --optimize-autoloader
 
-# Remove composer cache
-RUN rm -rf /var/www/html/.composer/cache
+# Set permissions
+RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache
+
+# Expose port 80
+EXPOSE 80
+
+# Start Nginx and PHP-FPM
+CMD ["sh", "-c", "nginx && php-fpm"]
