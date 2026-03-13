@@ -10,14 +10,6 @@ storage/logs/*.log
 public/hot
 public/storage
 tests
-phpunit.xml
 .phpunit.result.cache
 .vscode
 .editorconfig
-docker-compose.yml
-Dockerfile
-docker/
-README.md
-LICENSE
-composer.lock
-package-lock.json
