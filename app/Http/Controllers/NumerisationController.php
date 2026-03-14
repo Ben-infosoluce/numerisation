@@ -727,7 +727,8 @@ class NumerisationController extends Controller
     public function saveOpsNumerisation(Request $request)
     {
         // Augmenter la limite mémoire pour le traitement PDF
-        ini_set('memory_limit', '512M');
+        dd($request->all());
+
 
         Log::info('--- Début saveOpsNumerisation ID_Dossier: ' . $request->id_dossier . ' ---');
 
