@@ -727,7 +727,6 @@ class NumerisationController extends Controller
     public function saveOpsNumerisation(Request $request)
     {
         // Augmenter la limite mémoire pour le traitement PDF
-        dd($request->all());
 
 
         Log::info('--- Début saveOpsNumerisation ID_Dossier: ' . $request->id_dossier . ' ---');
@@ -760,6 +759,7 @@ class NumerisationController extends Controller
 
         $paths = [];
         $zipDirectory = 'downloads';
+        dd($request->all());
 
         // Vérification et création du répertoire
         if (!Storage::disk('public')->exists($zipDirectory)) {
