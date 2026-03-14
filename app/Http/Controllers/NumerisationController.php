@@ -727,15 +727,26 @@ class NumerisationController extends Controller
     public function saveOpsNumerisation(Request $request)
     {
         // Augmenter la limite mémoire pour le traitement PDF
-
-        // dd($request->all());
+        ini_set('memory_limit', '512M');
         Log::info('--- Début saveOpsNumerisation ID_Dossier: ' . $request->id_dossier . ' ---');
-
+        // 🚨 NOUVELLE PROTECTION CONTRE LES ERREURS DE TAILLE D'UPLOAD (NGINX/PHP) 🚨
+        if (!$request->hasFile('global_scan')) {
+            Log::error("ERREUR UPLOAD: Le fichier 'global_scan' n'est pas présent dans la requête HTTP reçue par PHP.");
+            return response()->json([
+                'message' => "Le fichier n'a pas pu être uploadé (peut-être trop lourd pour les limites du serveur Nginx/PHP)."
+            ], 422); // Code d'erreur clair
+        }
+        if (!$request->file('global_scan')->isValid()) {
+            Log::error("ERREUR UPLOAD INVALID: " . $request->file('global_scan')->getErrorMessage());
+            return response()->json([
+                'message' => "Le téléchargement du fichier est invalide ou corrompu: " . $request->file('global_scan')->getErrorMessage()
+            ], 422);
+        }
+        // Si le fichier existe et est valide, la validation Laravel ne crashera pas !
         $request->validate([
             'id_dossier' => 'required|exists:dossiers,id',
             'global_scan' => 'required|file|mimes:pdf',
         ]);
-        dd($request->all());
 
         $id_dossier = $request->id_dossier;
         $file = $request->file('global_scan');
