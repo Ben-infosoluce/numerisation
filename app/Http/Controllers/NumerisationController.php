@@ -715,103 +715,107 @@ class NumerisationController extends Controller
     //save immatriculation speciale numerisation
     public function saveOpsNumerisation(Request $request)
     {
+        // Augmenter la limite mémoire pour le traitement PDF
+        ini_set('memory_limit', '512M');
+
+        Log::info('--- Début saveOpsNumerisation ID_Dossier: ' . $request->id_dossier . ' ---');
 
         $request->validate([
             'id_dossier' => 'required|integer|exists:dossiers,id',
             'global_scan' => 'required|file|mimes:pdf',
         ]);
 
-
         $id_dossier = $request->id_dossier;
         $file = $request->file('global_scan');
         $tempPath = $file->getRealPath();
 
+        Log::info("Fichier source: " . $file->getClientOriginalName() . " | Taille: " . $file->getSize() . " octets");
 
-        // Champs dans l'ordre exact (12 pages pour 12 champs)
         $fields = [
-            'formulaire_recensement',      // Page 1
-            'permis_conduire',             // Page 2
-            'bon_a_enlever',               // Page 3
-            'declaration_d3',              // Page 4
-            'fiche_demande_carte_grise',   // Page 5
-            'carte_professionnelle',       // Page 6
-            'fiche_civio',                 // Page 7
-            'cni',                         // Page 8
-            'quittance_douane',            // Page 9
-            'fiche_rti',                   // Page 10
-            'assurance',                   // Page 11
-            'visite_technique',            // Page 12
+            'formulaire_recensement',
+            'permis_conduire',
+            'bon_a_enlever',
+            'declaration_d3',
+            'fiche_demande_carte_grise',
+            'carte_professionnelle',
+            'fiche_civio',
+            'cni',
+            'quittance_douane',
+            'fiche_rti',
+            'assurance',
+            'visite_technique',
         ];
 
         $paths = [];
         $zipDirectory = 'downloads';
+
+        // Vérification et création du répertoire
         if (!Storage::disk('public')->exists($zipDirectory)) {
+            Log::info("Création répertoire: $zipDirectory");
             Storage::disk('public')->makeDirectory($zipDirectory);
         }
-        
 
         $zipFileName = 'dossier_' . $id_dossier . '_documents.zip';
         $zipFilePath = Storage::disk('public')->path($zipDirectory . '/' . $zipFileName);
+
         $zip = new \ZipArchive();
         $zipOpened = $zip->open($zipFilePath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
 
-       
+        if ($zipOpened !== TRUE) {
+            Log::error("Erreur ZipArchive : Impossible d'ouvrir le fichier à " . $zipFilePath);
+        }
+
         try {
             $pdf = new Fpdi();
             $pageCount = $pdf->setSourceFile($tempPath);
+            Log::info("Nombre de pages total dans le PDF : " . $pageCount);
 
             $currentPage = 1;
             foreach ($fields as $field) {
                 if ($currentPage > $pageCount) break;
 
+                Log::info("Traitement page $currentPage pour le champ : $field");
+
                 $newPdf = new Fpdi();
                 $newPdf->setSourceFile($tempPath);
-
-                // Mappage 1:1 strict pour chaque page
                 $template = $newPdf->importPage($currentPage);
                 $size = $newPdf->getTemplateSize($template);
                 $newPdf->addPage($size['orientation'], [$size['width'], $size['height']]);
                 $newPdf->useTemplate($template);
-                
+
+                $output = $newPdf->Output('S');
+
                 $fileName = 'numerisations/' . Str::uuid() . '_' . $field . '.pdf';
-                $output = $newPdf->Output('S'); // Output as string
                 Storage::disk('public')->put($fileName, $output);
                 $paths[$field] = $fileName;
 
                 if ($zipOpened === TRUE) {
                     $zip->addFromString(Str::slug($field) . '.pdf', $output);
                 }
-                
+
                 $currentPage++;
             }
 
             if ($zipOpened === TRUE) {
                 $zip->close();
+                Log::info("Fichier ZIP fermé avec succès.");
             }
 
-            // Sauvegarde en base
-            $existingDocument = Document::where('id_dossier', $id_dossier)->first();
+            // Mise à jour base de données
             $dataToSave = array_merge($paths, [
                 'id_dossier' => $id_dossier,
                 'chemin_zip' => $zipDirectory . '/' . $zipFileName
             ]);
 
-            if ($existingDocument) {
-                $existingDocument->update($dataToSave);
-            } else {
-                Document::create($dataToSave);
-            }
+            Document::updateOrCreate(['id_dossier' => $id_dossier], $dataToSave);
+            Dossier::where('id', $id_dossier)->update(['statut_numerisation' => 2]);
 
-            // Mettre à jour le statut du dossier
-            $dossier = Dossier::findOrFail($id_dossier);
-            $dossier->statut_numerisation = 2;
-            $dossier->save();
-
-            return response()->json(['message' => 'Numérisation traitée et scindée (12 pages) avec succès !']);
-
+            Log::info("Opération terminée avec succès pour le dossier : $id_dossier");
+            return response()->json(['message' => 'Traitement réussi !']);
         } catch (\Exception $e) {
-            Log::error("Erreur lors du découpage PDF (12 pages) : " . $e->getMessage());
-            return response()->json(['message' => 'Erreur lors du traitement du fichier PDF - ' . $e->getMessage()], 500);
+            Log::error("CRITIQUE - Erreur traitement PDF : " . $e->getMessage());
+            Log::error("Trace : " . $e->getTraceAsString());
+            return response()->json(['message' => 'Erreur technique: ' . $e->getMessage()], 500);
         }
     }
 
@@ -851,14 +855,14 @@ class NumerisationController extends Controller
         if (!Storage::disk('public')->exists($zipDirectory)) {
             Storage::disk('public')->makeDirectory($zipDirectory);
         }
-        
+
 
         $zipFileName = 'dossier_' . $id_dossier . '_documents.zip';
         $zipFilePath = Storage::disk('public')->path($zipDirectory . '/' . $zipFileName);
         $zip = new \ZipArchive();
         $zipOpened = $zip->open($zipFilePath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
 
-       
+
         try {
             $pdf = new Fpdi();
             $pageCount = $pdf->setSourceFile($tempPath);
@@ -875,7 +879,7 @@ class NumerisationController extends Controller
                 $size = $newPdf->getTemplateSize($template);
                 $newPdf->addPage($size['orientation'], [$size['width'], $size['height']]);
                 $newPdf->useTemplate($template);
-                
+
                 $fileName = 'numerisations/' . Str::uuid() . '_' . $field . '.pdf';
                 $output = $newPdf->Output('S'); // Output as string
                 Storage::disk('public')->put($fileName, $output);
@@ -884,7 +888,7 @@ class NumerisationController extends Controller
                 if ($zipOpened === TRUE) {
                     $zip->addFromString(Str::slug($field) . '.pdf', $output);
                 }
-                
+
                 $currentPage++;
             }
 
@@ -911,7 +915,6 @@ class NumerisationController extends Controller
             $dossier->save();
 
             return response()->json(['message' => 'Numérisation traitée et scindée (12 pages) avec succès !']);
-
         } catch (\Exception $e) {
             Log::error("Erreur lors du découpage PDF (12 pages) : " . $e->getMessage());
             return response()->json(['message' => 'Erreur lors du traitement du fichier PDF - ' . $e->getMessage()], 500);
