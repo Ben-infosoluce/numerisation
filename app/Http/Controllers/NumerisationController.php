@@ -732,7 +732,7 @@ class NumerisationController extends Controller
         Log::info('--- Début saveOpsNumerisation ID_Dossier: ' . $request->id_dossier . ' ---');
 
         $request->validate([
-            'id_dossier' => 'required|integer|exists:dossiers,id',
+            'id_dossier' => 'required|exists:dossiers,id',
             'global_scan' => 'required|file|mimes:pdf',
         ]);
         dd($request->all());
