@@ -12,7 +12,7 @@ services:
             - storage-data:/app/storage
             - /data/downloads_partages:/app/storage/app/public/downloads
         networks:
-            - app-network
+            - coolify
 
     worker:
         build:
@@ -28,7 +28,7 @@ services:
             - storage-data:/app/storage
             - /data/downloads_partages:/app/storage/app/public/downloads
         networks:
-            - app-network
+            - coolify
 
     scheduler:
         build:
@@ -44,11 +44,11 @@ services:
             - storage-data:/app/storage
             - /data/downloads_partages:/app/storage/app/public/downloads
         networks:
-            - app-network
+            - coolify
 
 networks:
-    app-network:
-        driver: bridge
+    coolify:
+        external: true
 
 volumes:
     storage-data:
