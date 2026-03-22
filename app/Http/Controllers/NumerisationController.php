@@ -754,19 +754,22 @@ class NumerisationController extends Controller
 
         Log::info("Fichier source: " . $file->getClientOriginalName() . " | Taille: " . $file->getSize() . " octets");
 
-        $fields = [
-            'formulaire_recensement',
-            'permis_conduire',
-            'bon_a_enlever',
-            'declaration_d3',
-            'fiche_demande_carte_grise',
-            'carte_professionnelle',
-            'fiche_civio',
-            'cni',
-            'quittance_douane',
-            'fiche_rti',
-            'assurance',
-            'visite_technique',
+        // Configuration (16 pages pour 14 fichiers)
+        $fieldsConfig = [
+            ['field' => 'fiche_rti', 'filename' => 'rti', 'pages' => 1], // Page 1
+            ['field' => 'fiche_civio', 'filename' => 'civio', 'pages' => 1], // Page 2
+            ['field' => 'visite_technique', 'filename' => 'vtp', 'pages' => 1], // Page 3
+            ['field' => 'formulaire_recensement', 'filename' => 'fr', 'pages' => 1], // Page 4
+            ['field' => 'cni', 'filename' => 'pip', 'pages' => 1], // Page 5
+            ['field' => 'carte_professionnelle', 'filename' => 'cp', 'pages' => 1], // Page 6
+            ['field' => 'permis_conduire', 'filename' => 'pc', 'pages' => 1], // Page 7
+            ['field' => 'd3', 'filename' => 'd3', 'pages' => 3], // Pages 8, 9, 10
+            ['field' => 'assurance', 'filename' => 'Ass', 'pages' => 1], // Page 11
+            ['field' => 'fiche_demande_carte_grise', 'filename' => 'dcg', 'pages' => 1], // Page 12
+            ['field' => 'recepisse_depot', 'filename' => 'rdd', 'pages' => 1], // Page 13
+            ['field' => 'recu_dgttc', 'filename' => 'rdgttc', 'pages' => 1], // Page 14
+            ['field' => 'recu_emuci', 'filename' => 'remuci', 'pages' => 1], // Page 15
+            ['field' => 'recu_quipux', 'filename' => 'rquipux', 'pages' => 1], // Page 16
         ];
 
         $paths = [];
@@ -794,30 +797,39 @@ class NumerisationController extends Controller
             Log::info("Nombre de pages total dans le PDF : " . $pageCount);
 
             $currentPage = 1;
-            foreach ($fields as $field) {
+            foreach ($fieldsConfig as $config) {
                 if ($currentPage > $pageCount)
                     break;
+
+                $field = $config['field'];
+                $pagesToExtract = $config['pages'];
+                $filenameAlias = $config['filename'];
 
                 Log::info("Traitement page $currentPage pour le champ : $field");
 
                 $newPdf = new Fpdi();
-                $newPdf->setSourceFile($tempPath);
-                $template = $newPdf->importPage($currentPage);
-                $size = $newPdf->getTemplateSize($template);
-                $newPdf->addPage($size['orientation'], [$size['width'], $size['height']]);
-                $newPdf->useTemplate($template);
+                
+                for ($i = 0; $i < $pagesToExtract; $i++) {
+                    if ($currentPage > $pageCount) break;
+
+                    $newPdf->setSourceFile($tempPath);
+                    $template = $newPdf->importPage($currentPage);
+                    $size = $newPdf->getTemplateSize($template);
+                    $newPdf->addPage($size['orientation'], [$size['width'], $size['height']]);
+                    $newPdf->useTemplate($template);
+
+                    $currentPage++;
+                }
 
                 $output = $newPdf->Output('S');
 
-                $fileName = 'numerisations/' . Str::uuid() . '_' . $field . '.pdf';
+                $fileName = 'numerisations/' . Str::uuid() . '_' . $filenameAlias . '.pdf';
                 Storage::disk('public')->put($fileName, $output);
                 $paths[$field] = $fileName;
 
                 if ($zipOpened === TRUE) {
-                    $zip->addFromString(Str::slug($field) . '.pdf', $output);
+                    $zip->addFromString($filenameAlias . '.pdf', $output);
                 }
-
-                $currentPage++;
             }
 
             if ($zipOpened === TRUE) {
@@ -859,20 +871,22 @@ class NumerisationController extends Controller
         $tempPath = $file->getRealPath();
 
 
-        // Champs dans l'ordre exact (12 pages pour 12 champs)
-        $fields = [
-            'formulaire_recensement', // Page 1
-            'permis_conduire', // Page 2
-            'bon_a_enlever', // Page 3
-            'declaration_d3', // Page 4
-            'fiche_demande_carte_grise', // Page 5
-            'carte_professionnelle', // Page 6
-            'fiche_civio', // Page 7
-            'cni', // Page 8
-            'quittance_douane', // Page 9
-            'fiche_rti', // Page 10
-            'assurance', // Page 11
-            'visite_technique', // Page 12
+        // Configuration (16 pages pour 14 fichiers)
+        $fieldsConfig = [
+            ['field' => 'fiche_rti', 'filename' => 'rti', 'pages' => 1], // Page 1
+            ['field' => 'fiche_civio', 'filename' => 'civio', 'pages' => 1], // Page 2
+            ['field' => 'visite_technique', 'filename' => 'vtp', 'pages' => 1], // Page 3
+            ['field' => 'formulaire_recensement', 'filename' => 'fr', 'pages' => 1], // Page 4
+            ['field' => 'cni', 'filename' => 'pip', 'pages' => 1], // Page 5
+            ['field' => 'carte_professionnelle', 'filename' => 'cp', 'pages' => 1], // Page 6
+            ['field' => 'permis_conduire', 'filename' => 'pc', 'pages' => 1], // Page 7
+            ['field' => 'd3', 'filename' => 'd3', 'pages' => 3], // Pages 8, 9, 10
+            ['field' => 'assurance', 'filename' => 'Ass', 'pages' => 1], // Page 11
+            ['field' => 'fiche_demande_carte_grise', 'filename' => 'dcg', 'pages' => 1], // Page 12
+            ['field' => 'recepisse_depot', 'filename' => 'rdd', 'pages' => 1], // Page 13
+            ['field' => 'recu_dgttc', 'filename' => 'rdgttc', 'pages' => 1], // Page 14
+            ['field' => 'recu_emuci', 'filename' => 'remuci', 'pages' => 1], // Page 15
+            ['field' => 'recu_quipux', 'filename' => 'rquipux', 'pages' => 1], // Page 16
         ];
 
         $paths = [];
@@ -893,29 +907,36 @@ class NumerisationController extends Controller
             $pageCount = $pdf->setSourceFile($tempPath);
 
             $currentPage = 1;
-            foreach ($fields as $field) {
+            foreach ($fieldsConfig as $config) {
                 if ($currentPage > $pageCount)
                     break;
 
+                $field = $config['field'];
+                $pagesToExtract = $config['pages'];
+                $filenameAlias = $config['filename'];
+
                 $newPdf = new Fpdi();
-                $newPdf->setSourceFile($tempPath);
+                
+                for ($i = 0; $i < $pagesToExtract; $i++) {
+                    if ($currentPage > $pageCount) break;
 
-                // Mappage 1:1 strict pour chaque page
-                $template = $newPdf->importPage($currentPage);
-                $size = $newPdf->getTemplateSize($template);
-                $newPdf->addPage($size['orientation'], [$size['width'], $size['height']]);
-                $newPdf->useTemplate($template);
+                    $newPdf->setSourceFile($tempPath);
+                    $template = $newPdf->importPage($currentPage);
+                    $size = $newPdf->getTemplateSize($template);
+                    $newPdf->addPage($size['orientation'], [$size['width'], $size['height']]);
+                    $newPdf->useTemplate($template);
 
-                $fileName = 'numerisations/' . Str::uuid() . '_' . $field . '.pdf';
+                    $currentPage++;
+                }
+
+                $fileName = 'numerisations/' . Str::uuid() . '_' . $filenameAlias . '.pdf';
                 $output = $newPdf->Output('S'); // Output as string
                 Storage::disk('public')->put($fileName, $output);
                 $paths[$field] = $fileName;
 
                 if ($zipOpened === TRUE) {
-                    $zip->addFromString(Str::slug($field) . '.pdf', $output);
+                    $zip->addFromString($filenameAlias . '.pdf', $output);
                 }
-
-                $currentPage++;
             }
 
             if ($zipOpened === TRUE) {
@@ -941,10 +962,10 @@ class NumerisationController extends Controller
             $dossier->statut_numerisation = 2;
             $dossier->save();
 
-            return response()->json(['message' => 'Numérisation traitée et scindée (12 pages) avec succès !']);
+            return response()->json(['message' => 'Numérisation traitée et scindée (16 pages) avec succès !']);
         }
         catch (\Exception $e) {
-            Log::error("Erreur lors du découpage PDF (12 pages) : " . $e->getMessage());
+            Log::error("Erreur lors du découpage PDF (16 pages) : " . $e->getMessage());
             return response()->json(['message' => 'Erreur lors du traitement du fichier PDF - ' . $e->getMessage()], 500);
         }
     }

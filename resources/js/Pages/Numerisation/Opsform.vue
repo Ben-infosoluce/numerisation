@@ -74,9 +74,9 @@
                         <div class="w-full">
                             <!-- Fichier Global (10 pages) -->
                             <div class="space-y-4">
-                                <p class="text-lg font-medium">Fichier de numérisation global (Scannez les 12 pages ensemble) *</p>
+                                <p class="text-lg font-medium">Fichier de numérisation global (Scannez les 16 pages ensemble) *</p>
                                 <CustomFileUpload 
-                                    dropText="Déposez le fichier PDF contenant les 12 pages ici" 
+                                    dropText="Déposez le fichier PDF contenant les 16 pages (14 documents) ici" 
                                     previewText="Fichier global sélectionné"
                                     accept="application/pdf" 
                                     @input="form.global_scan = $event.target.files[0]" 
@@ -86,7 +86,7 @@
                                     modal-title="Aperçu du scan global" 
                                 />
                                 <p class="text-sm text-gray-500 italic">
-                                    Note : Le fichier doit contenir les 12 pièces dans l'ordre (1. Recensement, 2. Permis, 3. Bon à enlever, 4. Déclaration D3, 5. Carte Grise, 6. Carte Pro, 7. Identification, 8. Pièce ID Propriétaire, 9. Quittance Douanes, 10. RTI, 11. Assurance, 12. Visite Technique).
+                                    Note : Le fichier doit contenir les 14 pièces dans l'ordre (1. RTI, 2. CIVIO, 3. Visite Technique, 4. Recensement, 5. CNI, 6. Carte Pro, 7. Permis, 8. Douanes (D3 - 3 pages), 9. Assurance, 10. Fiche de demande carte grise, 11. Récépissé dépôt, 12. Reçu DGTTC, 13. Reçu EMU-CI, 14. Reçu QUIPUX).
                                 </p>
                             </div>
                         </div>

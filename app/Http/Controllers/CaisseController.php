@@ -62,10 +62,10 @@ class CaisseController extends Controller
         }
 
         /*
-    |--------------------------------------------------------------------------
-    | DetailTypeServices du dossier principal
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | DetailTypeServices du dossier principal
+        |--------------------------------------------------------------------------
+        */
         $details = json_decode($dossier->detail); // tableau de noms de services
 
         $ids = DB::table('type_services')
@@ -78,10 +78,10 @@ class CaisseController extends Controller
             ->get();
 
         /*
-    |--------------------------------------------------------------------------
-    | DetailTypeServices du dossier lié (si existe)
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | DetailTypeServices du dossier lié (si existe)
+        |--------------------------------------------------------------------------
+        */
         $detailTypeServices_lier = [];
 
         if ($dossier_lier) {
