@@ -808,9 +808,10 @@ class NumerisationController extends Controller
                 Log::info("Traitement page $currentPage pour le champ : $field");
 
                 $newPdf = new Fpdi();
-                
+
                 for ($i = 0; $i < $pagesToExtract; $i++) {
-                    if ($currentPage > $pageCount) break;
+                    if ($currentPage > $pageCount)
+                        break;
 
                     $newPdf->setSourceFile($tempPath);
                     $template = $newPdf->importPage($currentPage);
@@ -869,6 +870,9 @@ class NumerisationController extends Controller
         $id_dossier = $request->id_dossier;
         $file = $request->file('global_scan');
         $tempPath = $file->getRealPath();
+        $vehicule = Dossier::where('id', $id_dossier)->first();
+        $vin = $vehicule->vin;
+
 
 
         // Configuration (16 pages pour 14 fichiers)
@@ -896,7 +900,7 @@ class NumerisationController extends Controller
         }
 
 
-        $zipFileName = 'dossier_' . $id_dossier . '_documents.zip';
+        $zipFileName = $vin . '.zip';
         $zipFilePath = Storage::disk('public')->path($zipDirectory . '/' . $zipFileName);
         $zip = new \ZipArchive();
         $zipOpened = $zip->open($zipFilePath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
@@ -916,9 +920,10 @@ class NumerisationController extends Controller
                 $filenameAlias = $config['filename'];
 
                 $newPdf = new Fpdi();
-                
+
                 for ($i = 0; $i < $pagesToExtract; $i++) {
-                    if ($currentPage > $pageCount) break;
+                    if ($currentPage > $pageCount)
+                        break;
 
                     $newPdf->setSourceFile($tempPath);
                     $template = $newPdf->importPage($currentPage);
