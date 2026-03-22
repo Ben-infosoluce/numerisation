@@ -283,7 +283,7 @@ class PdcController extends Controller
             $dossier->id_site = getIdSite();
             $dossier->id_service = 1;
             $dossier->id_type_service = 1;
-            $dossier->num_chrono = generateChronoNumber('OPSP');
+            $dossier->num_chrono = $request->num_chrono ?? generateChronoNumber('OPSP');
             $dossier->detail = '["OPS Spéciale"]';
             $dossier->type = 'FDS';
             $dossier->statut = 1;
@@ -295,7 +295,7 @@ class PdcController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'OPS créé avec succès',
+                'message' => 'Dossier créé avec succès',
                 'data' => $dossier
             ], 201);
         } catch (\Exception $e) {

@@ -261,7 +261,7 @@
                     </div>
                 </Card>
             </div>
-            <div v-if="dossier.statut_numerisation == 1 && dossier.statut == 1"
+            <div v-if="dossier.statut_numerisation == 1 && (dossier.statut == 1 || dossier.statut == 4) "
                 class="sticky top-[-20px] z-10 bg-[#ffffff] dark:bg-gray-900 flex flex-col space-y-4 px-8 py-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                 <div></div>
                 <div
