@@ -54,9 +54,15 @@
                         <TableCell>{{ zip.size }}</TableCell>
                         <TableCell>{{ zip.date }}</TableCell>
                         <TableCell>{{ 'Camp BAE Yopougon' }}</TableCell>
-                        <TableCell>
-                            <Button variant="outline" size="sm" @click="downloadSingle(zip)">
-                                <Download class="mr-1" />Télécharger
+                        <TableCell class="flex gap-2">
+                            <Button variant="outline" size="sm" @click="downloadSingle(zip)" title="Télécharger">
+                                <Download class="w-4 h-4" />
+                            </Button>
+                            <Button variant="outline" size="sm" @click="renameZip(zip)" title="Renommer">
+                                <Edit class="w-4 h-4 text-blue-500" />
+                            </Button>
+                            <Button variant="outline" size="sm" @click="deleteZip(zip)" title="Supprimer">
+                                <Trash2 class="w-4 h-4 text-red-500" />
                             </Button>
                         </TableCell>
                     </TableRow>
@@ -88,9 +94,10 @@ import { ref, onMounted, computed } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Download, ChevronRight, ChevronLeft } from 'lucide-vue-next';
+import { Download, ChevronRight, ChevronLeft, Trash2, Edit } from 'lucide-vue-next';
 import { Toaster, toast } from 'vue-sonner';
 import DateRangePicker from '@/components/ui/DateRangePicker.vue';
+import axios from 'axios';
 
 const zips = ref([]);
 const filteredZips = ref([]);
@@ -165,6 +172,37 @@ const getRelativePath = (url) => {
     } catch (e) {
         console.error("Erreur lors du traitement de l'URL :", e);
         return url;
+    }
+};
+
+const renameZip = async (zip) => {
+    const newName = window.prompt("Entrez le nouveau nom pour le fichier ZIP (sans extension):", zip.name.replace('.zip', ''));
+    if (!newName || newName.trim() === '' || newName === zip.name.replace('.zip', '')) return;
+
+    try {
+        const response = await axios.post('/archives/zips/rename', {
+            old_name: zip.name,
+            new_name: newName.trim() + '.zip'
+        });
+
+        toast.success(response.data.message || 'Fichier renommé avec succès');
+        fetchZips();
+    } catch (err) {
+        toast.error(err.response?.data?.message || 'Erreur lors du renommage');
+        console.error(err);
+    }
+};
+
+const deleteZip = async (zip) => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer le fichier "${zip.name}" ?`)) return;
+
+    try {
+        const response = await axios.delete(`/archives/zips/delete/${zip.name}`);
+        toast.success(response.data.message || 'Fichier supprimé avec succès');
+        fetchZips();
+    } catch (err) {
+        toast.error(err.response?.data?.message || 'Erreur lors de la suppression');
+        console.error(err);
     }
 };
 

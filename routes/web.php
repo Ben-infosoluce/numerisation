@@ -307,6 +307,9 @@ Route::group([
     Route::get('numerisation/get/data/modification/{vin}', [NumerisationController::class, "showModificationGetData"])->name('show.modification.numerisation.get.data');
     Route::get('/archives/zips', [ZipController::class, 'getZips'])->name('zips.get');
     Route::get('/archives/zips/list', [ZipController::class, 'zipList'])->name('zips.list');
+    Route::get('/archives/zips/download/{name}', [ZipController::class, 'download'])->name('zips.download');
+    Route::post('/archives/zips/rename', [ZipController::class, 'rename'])->name('zips.rename');
+    Route::delete('/archives/zips/delete/{name}', [ZipController::class, 'delete'])->name('zips.delete');
 });
 
 

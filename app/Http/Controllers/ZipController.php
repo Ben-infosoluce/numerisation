@@ -66,4 +66,52 @@ class ZipController extends Controller
         if ($bytes == 1) return '1 byte';
         return '0 bytes';
     }
+
+    public function download($name)
+    {
+        $path = 'downloads/' . $name;
+        if (!Storage::disk('public')->exists($path)) {
+            return abort(404, 'Fichier introuvable');
+        }
+        return Storage::disk('public')->download($path);
+    }
+
+    public function rename(Request $request)
+    {
+        $request->validate([
+            'old_name' => 'required|string',
+            'new_name' => 'required|string',
+        ]);
+
+        $oldPath = 'downloads/' . $request->old_name;
+        if (!Storage::disk('public')->exists($oldPath)) {
+            return response()->json(['message' => 'Fichier introuvable'], 404);
+        }
+
+        $newName = $request->new_name;
+        if (!str_ends_with($newName, '.zip')) {
+            $newName .= '.zip';
+        }
+        $newPath = 'downloads/' . $newName;
+
+        if (Storage::disk('public')->exists($newPath)) {
+            return response()->json(['message' => 'Un fichier avec ce nom existe déjà'], 400);
+        }
+
+        Storage::disk('public')->move($oldPath, $newPath);
+
+        return response()->json(['message' => 'Fichier renommé avec succès']);
+    }
+
+    public function delete($name)
+    {
+        $path = 'downloads/' . $name;
+        if (!Storage::disk('public')->exists($path)) {
+            return response()->json(['message' => 'Fichier introuvable'], 404);
+        }
+
+        Storage::disk('public')->delete($path);
+
+        return response()->json(['message' => 'Fichier supprimé avec succès']);
+    }
 }

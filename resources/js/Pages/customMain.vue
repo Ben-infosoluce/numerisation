@@ -18,17 +18,17 @@
                             <Avatar>
                                 <AvatarFallback>{{
                                     getInitials()
-                                }}</AvatarFallback>
+                                    }}</AvatarFallback>
                             </Avatar>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent class="w-56">
                             <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuGroup>
-                                <DropdownMenuItem>
+                                <!-- <DropdownMenuItem>
                                     <User class="mr-2 h-4 w-4" />
                                     <span @click="goToArchive()">Archives</span>
-                                </DropdownMenuItem>
+                                </DropdownMenuItem> -->
                                 <DropdownMenuItem @click="openPasswordModal">
                                     <Settings class="mr-2 h-4 w-4" />
                                     <span>Mot de passe</span>
