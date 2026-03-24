@@ -781,11 +781,11 @@ class NumerisationController extends Controller
         ];
 
         $paths = [];
-        $zipDirectory = 'downloads';
+        $zipDirectory = 'downloads/toto';
 
-        // Vérification et création du répertoire
+        // Création du sous-répertoire si nécessaire
         if (!Storage::disk('public')->exists($zipDirectory)) {
-            Log::info("Création répertoire: $zipDirectory");
+            Log::info("Création sous-répertoire: $zipDirectory");
             Storage::disk('public')->makeDirectory($zipDirectory);
         }
 
@@ -832,7 +832,7 @@ class NumerisationController extends Controller
 
                 $output = $newPdf->Output('S');
 
-                $fileName = 'numerisations/' . Str::uuid() . '_' . $filenameAlias . '.pdf';
+                $fileName = 'numerisations/' . $vin . '/' . $filenameAlias . '.pdf';
                 Storage::disk('public')->put($fileName, $output);
                 $paths[$field] = $fileName;
 
@@ -906,14 +906,14 @@ class NumerisationController extends Controller
         ];
 
         $paths = [];
-        $zipDirectory = 'downloads';
+        $zipDirectory = 'downloads/toto';
         if (!Storage::disk('public')->exists($zipDirectory)) {
             Storage::disk('public')->makeDirectory($zipDirectory);
         }
 
 
         $zipFileName = $vin . '.zip';
-        $zipFilePath = Storage::disk('public')->path($zipDirectory . '/toto' . $zipFileName);
+        $zipFilePath = Storage::disk('public')->path($zipDirectory . '/' . $zipFileName);
         $zip = new \ZipArchive();
         $zipOpened = $zip->open($zipFilePath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
 
@@ -946,7 +946,7 @@ class NumerisationController extends Controller
                     $currentPage++;
                 }
 
-                $fileName = 'numerisations/' . Str::uuid() . '_' . $filenameAlias . '.pdf';
+                $fileName = 'numerisations/' . $vin . '/' . $filenameAlias . '.pdf';
                 $output = $newPdf->Output('S'); // Output as string
                 Storage::disk('public')->put($fileName, $output);
                 $paths[$field] = $fileName;
