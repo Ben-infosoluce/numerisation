@@ -114,4 +114,30 @@ class ZipController extends Controller
 
         return response()->json(['message' => 'Fichier supprimé avec succès']);
     }
+
+    public function upload(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:zip,pdf,xls,xlsx|max:102400',
+        ], [
+            'file.required' => 'Aucun fichier sélectionné.',
+            'file.mimes'    => 'Formats acceptés : ZIP, PDF, XLS, XLSX.',
+            'file.max'      => 'Le fichier ne doit pas dépasser 100 Mo.',
+        ]);
+
+        $uploadedFile = $request->file('file');
+        $filename = $uploadedFile->getClientOriginalName();
+
+        // Éviter d'écraser un fichier existant
+        $destination = 'downloads/' . $filename;
+        if (Storage::disk('public')->exists($destination)) {
+            $name = pathinfo($filename, PATHINFO_FILENAME);
+            $ext  = pathinfo($filename, PATHINFO_EXTENSION);
+            $filename = $name . '_' . now()->format('YmdHis') . '.' . $ext;
+        }
+
+        $uploadedFile->storeAs('downloads', $filename, 'public');
+
+        return response()->json(['message' => 'Fichier importé avec succès', 'filename' => $filename]);
+    }
 }

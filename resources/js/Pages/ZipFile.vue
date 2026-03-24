@@ -10,10 +10,13 @@
                 <DateRangePicker v-model="dateRange" @update:start="onStartDateChange" @update:end="onEndDateChange" />
             </div>
 
-            <!-- Bouton de téléchargement groupé -->
-            <div v-if="filteredZips.length > 0" class="mb-4">
-                <Button @click="downloadSelected" :disabled="selectedZips.length === 0" class="sm">
+            <!-- Actions -->
+            <div class="mb-4 flex gap-2">
+                <Button v-if="filteredZips.length > 0" @click="downloadSelected" :disabled="selectedZips.length === 0" class="sm">
                     <Download class="mr-1" /> Télécharger la sélection
+                </Button>
+                <Button @click="showUploadModal = true" class="sm bg-blue-600 hover:bg-blue-700 text-white">
+                    <Upload class="w-4 h-4 mr-1" /> Importer un fichier
                 </Button>
             </div>
         </div>
@@ -85,6 +88,54 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal Upload -->
+    <div v-if="showUploadModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-800">Importer un fichier</h2>
+                <button @click="closeUploadModal" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+            </div>
+
+            <!-- Zone drag & drop -->
+            <div
+                class="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition"
+                :class="isDraggingUpload ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-400'"
+                @click="triggerUploadInput"
+                @dragover.prevent="isDraggingUpload = true"
+                @dragleave.prevent="isDraggingUpload = false"
+                @drop.prevent="onUploadDrop"
+            >
+                <Upload class="w-10 h-10 mx-auto mb-3 text-blue-400" />
+                <p class="font-medium text-gray-700">Déposez votre fichier ici</p>
+                <p class="text-sm text-gray-400 mt-1">ou cliquez pour parcourir</p>
+                <p class="text-xs text-gray-400 mt-2">Formats acceptés : ZIP, PDF, XLS, XLSX</p>
+                <input ref="uploadInput" type="file" class="hidden" accept=".zip,.pdf,.xls,.xlsx,application/zip,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" @change="onUploadFileChange" />
+            </div>
+
+            <!-- Fichier sélectionné -->
+            <div v-if="uploadFile" class="mt-4 flex items-center justify-between border border-green-400 bg-green-50 rounded-lg px-4 py-2">
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <span class="text-xl">📄</span>
+                    <div class="overflow-hidden">
+                        <p class="text-sm font-medium text-gray-800 truncate">{{ uploadFile.name }}</p>
+                        <p class="text-xs text-gray-500">{{ (uploadFile.size / 1024 / 1024).toFixed(2) }} MB</p>
+                    </div>
+                </div>
+                <button @click="uploadFile = null" class="text-red-500 hover:text-red-700 text-lg" title="Retirer">🗑️</button>
+            </div>
+
+            <!-- Actions -->
+            <div class="mt-6 flex justify-end gap-3">
+                <Button variant="outline" @click="closeUploadModal">Annuler</Button>
+                <Button :disabled="!uploadFile || isUploading" @click="submitUpload" class="bg-blue-600 hover:bg-blue-700 text-white">
+                    <span v-if="isUploading">Envoi en cours...</span>
+                    <span v-else><Upload class="w-4 h-4 inline mr-1" />Envoyer</span>
+                </Button>
+            </div>
+        </div>
+    </div>
+
     <Toaster richColors position="top-center" />
 </template>
 
@@ -94,7 +145,7 @@ import { ref, onMounted, computed } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Download, ChevronRight, ChevronLeft, Trash2, Edit } from 'lucide-vue-next';
+import { Download, ChevronRight, ChevronLeft, Trash2, Edit, Upload } from 'lucide-vue-next';
 import { Toaster, toast } from 'vue-sonner';
 import DateRangePicker from '@/components/ui/DateRangePicker.vue';
 import axios from 'axios';
@@ -108,6 +159,53 @@ const dateRange = ref({ start: null, end: null });
 const currentPage = ref(1);
 const itemsPerPage = 10;
 const allSelected = ref(false);
+
+// Upload
+const showUploadModal = ref(false);
+const uploadFile = ref(null);
+const isDraggingUpload = ref(false);
+const isUploading = ref(false);
+const uploadInput = ref(null);
+
+const triggerUploadInput = () => uploadInput.value?.click();
+
+const onUploadFileChange = (e) => {
+    const f = e.target.files[0];
+    if (f) uploadFile.value = f;
+};
+
+const onUploadDrop = (e) => {
+    isDraggingUpload.value = false;
+    const f = e.dataTransfer.files[0];
+    if (f) uploadFile.value = f;
+};
+
+const closeUploadModal = () => {
+    showUploadModal.value = false;
+    uploadFile.value = null;
+    isDraggingUpload.value = false;
+    if (uploadInput.value) uploadInput.value.value = '';
+};
+
+const submitUpload = async () => {
+    if (!uploadFile.value) return;
+    isUploading.value = true;
+    const formData = new FormData();
+    formData.append('file', uploadFile.value);
+    try {
+        await axios.post('/archives/zips/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        toast.success('Fichier importé avec succès !');
+        closeUploadModal();
+        fetchZips();
+    } catch (err) {
+        toast.error(err.response?.data?.message || "Erreur lors de l'importation");
+        console.error(err);
+    } finally {
+        isUploading.value = false;
+    }
+};
 
 // Fonction pour simuler un délai de téléchargement
 const simulateDownload = (file) => {

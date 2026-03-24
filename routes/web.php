@@ -310,6 +310,7 @@ Route::group([
     Route::get('/archives/zips/download/{name}', [ZipController::class, 'download'])->name('zips.download');
     Route::post('/archives/zips/rename', [ZipController::class, 'rename'])->name('zips.rename');
     Route::delete('/archives/zips/delete/{name}', [ZipController::class, 'delete'])->name('zips.delete');
+    Route::post('/archives/zips/upload', [ZipController::class, 'upload'])->name('zips.upload');
 });
 
 
