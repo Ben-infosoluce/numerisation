@@ -58,6 +58,7 @@
                                     <TableHead>Type de service</TableHead>
                                     <TableHead>Num chrono</TableHead>
                                     <TableHead>Statut Paiement</TableHead>
+                                    <TableHead>N° Immatriculation</TableHead>
                                     <TableHead>Date</TableHead>
                                     <TableHead>Statut</TableHead>
                                     <TableHead class="text-right">Actions</TableHead>
@@ -132,6 +133,7 @@
                                                 }}
                                             </Badge>
                                         </TableCell>
+                                        <TableCell>{{ dossier?.r_dossier_vehicule?.num_immatriculation || '—' }}</TableCell>
                                         <TableCell>{{ dossier?.date_creation || '—' }}</TableCell>
 
                                         <TableCell>

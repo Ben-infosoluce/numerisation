@@ -41,7 +41,8 @@ class NumerisationController extends Controller
             return response()->json([
                 'exists' => $exists,
             ]);
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             return response()->json([
                 'error' => $e->getMessage(),
             ], 500);
@@ -58,6 +59,8 @@ class NumerisationController extends Controller
     public function getNumerisationData(Request $request)
     {
         $userSiteId = getIdSite();
+        // dd($userSiteId);
+
         $query = Dossier::with([
             'r_dossier_vehicule',
             'r_dossier_user',
@@ -66,9 +69,12 @@ class NumerisationController extends Controller
             'r_dossier_services',
             'r_dossier_services.r_service_types',
             'r_dossier_transactions',
-        ])->where('statut_paiement', 2)
-            ->where('id_site', $userSiteId);
-
+        ])
+            ->where('statut_paiement', 2)
+            ->where(function ($q) use ($userSiteId) {
+            $q->where('id_site', $userSiteId)
+                ->orWhere('id_site', 0);
+        });
         $filtre_per_page = $request->input('filtre_per_page', 1);
         $statut = $request->input('statut_numerisation');
         $filtre_type = $request->input('filtre_type');
@@ -103,8 +109,9 @@ class NumerisationController extends Controller
                 $end = $date_end;
 
                 $query->whereBetween('date_creation', [$start, $end]);
-            } catch (\Exception $e) {
-                // Optionnel : log ou ignorer si erreur de date
+            }
+            catch (\Exception $e) {
+            // Optionnel : log ou ignorer si erreur de date
             }
         }
 
@@ -113,13 +120,13 @@ class NumerisationController extends Controller
         return response()->json([
             'dossiers' => $dossiers,
             'filtres' => $request->only(
-                "filtre_per_page",
-                "statut",
-                "search_data",
-                "filtre_type",
-                "date_start",
-                "date_end"
-            ),
+            "filtre_per_page",
+            "statut",
+            "search_data",
+            "filtre_type",
+            "date_start",
+            "date_end"
+        ),
         ]);
     }
 
@@ -212,7 +219,8 @@ class NumerisationController extends Controller
             return inertia('Numerisation/edit', [
                 'document' => $document,
             ]);
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => 'Document introuvable']);
         }
     }
@@ -225,7 +233,8 @@ class NumerisationController extends Controller
                 'status' => 'success',
                 'data' => $document,
             ], 200);
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Document introuvable',
@@ -284,7 +293,8 @@ class NumerisationController extends Controller
         if ($log) {
             $old = json_decode($log->old_values, true);
             $new = json_decode($log->new_values, true);
-        } else {
+        }
+        else {
             $old = $new = [];
         }
 
@@ -345,7 +355,8 @@ class NumerisationController extends Controller
         if ($log) {
             $old = json_decode($log->old_values, true);
             $new = json_decode($log->new_values, true);
-        } else {
+        }
+        else {
             $old = $new = [];
         }
 
@@ -406,7 +417,8 @@ class NumerisationController extends Controller
         if ($log) {
             $old = json_decode($log->old_values, true);
             $new = json_decode($log->new_values, true);
-        } else {
+        }
+        else {
             $old = $new = [];
         }
 
@@ -462,11 +474,11 @@ class NumerisationController extends Controller
                 ->where('id', $dossierPrincipal->id_dossier_lier)
                 ->first();
 
-            // 🔴 3. Si dossier lié → redirection vers selectDossier
-            // return inertia('Numerisation/selectDossier', [
-            //     'dossier' => $dossierPrincipal,
-            //     'dossier_lier' => $dossierLier,
-            // ]);
+        // 🔴 3. Si dossier lié → redirection vers selectDossier
+        // return inertia('Numerisation/selectDossier', [
+        //     'dossier' => $dossierPrincipal,
+        //     'dossier_lier' => $dossierLier,
+        // ]);
         }
 
         // 🟢 4. Pas de dossier lié → afficher le formulaire normal
@@ -522,7 +534,8 @@ class NumerisationController extends Controller
         if ($log) {
             $old = json_decode($log->old_values, true);
             $new = json_decode($log->new_values, true);
-        } else {
+        }
+        else {
             $old = $new = [];
         }
 
@@ -570,11 +583,11 @@ class NumerisationController extends Controller
                 ->where('id', $dossierPrincipal->id_dossier_lier)
                 ->first();
 
-            // 🔴 3. Si dossier lié → redirection vers selectDossier
-            // return inertia('Numerisation/selectDossier', [
-            //     'dossier' => $dossierPrincipal,
-            //     'dossier_lier' => $dossierLier,
-            // ]);
+        // 🔴 3. Si dossier lié → redirection vers selectDossier
+        // return inertia('Numerisation/selectDossier', [
+        //     'dossier' => $dossierPrincipal,
+        //     'dossier_lier' => $dossierLier,
+        // ]);
         }
 
         // 🟢 4. Pas de dossier lié → afficher le formulaire normal
@@ -610,7 +623,8 @@ class NumerisationController extends Controller
                     'documents' => $documents
                 ]
             ], 200);
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             Log::error("Erreur interne lors de la récupération des documents", [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -684,7 +698,8 @@ class NumerisationController extends Controller
         $existingDocument = Document::where('id_dossier', $validated['id_dossier'])->first();
         if ($existingDocument) {
             $existingDocument->update(array_merge($validated, $paths));
-        } else {
+        }
+        else {
             Document::create(array_merge($validated, $paths, ['id_dossier' => $validated['id_dossier']]));
         }
 
@@ -693,7 +708,8 @@ class NumerisationController extends Controller
             $existingLierDocument = Document::where('id_dossier', $request->dossier_lier_id)->first();
             if ($existingLierDocument) {
                 $existingLierDocument->update(array_merge($validated, $paths));
-            } else {
+            }
+            else {
                 Document::create(array_merge($validated, $paths, ['id_dossier' => $request->dossier_lier_id]));
             }
         }
@@ -743,8 +759,8 @@ class NumerisationController extends Controller
 
         $dossier =
             Dossier::with([
-                'r_dossier_vehicule',
-            ])->where('id', $id_dossier)->first();
+            'r_dossier_vehicule',
+        ])->where('id', $id_dossier)->first();
 
         if (!$dossier) {
             Log::error("Dossier non trouvé pour ID: $id_dossier");
@@ -860,11 +876,15 @@ class NumerisationController extends Controller
             ]);
 
             Document::updateOrCreate(['id_dossier' => $id_dossier], $dataToSave);
-            Dossier::where('id', $id_dossier)->update(['statut_numerisation' => 2]);
+            Dossier::where('id', $id_dossier)->update([
+                'statut_numerisation' => 2,
+                'id_site' => getIdSite(),
+            ]);
 
             Log::info("Opération terminée avec succès pour le dossier : $id_dossier");
             return response()->json(['message' => 'Traitement réussi !']);
-        } catch (\Throwable $e) {
+        }
+        catch (\Throwable $e) {
             Log::error("CRITIQUE - Erreur traitement PDF : " . $e->getMessage());
             Log::error("Trace : " . $e->getTraceAsString());
             return response()->json(['message' => 'Erreur technique: ' . $e->getMessage()], 500);
@@ -886,8 +906,8 @@ class NumerisationController extends Controller
         $tempPath = $file->getRealPath();
         $dossier =
             Dossier::with([
-                'r_dossier_vehicule',
-            ])->where('id', $id_dossier)->first();
+            'r_dossier_vehicule',
+        ])->where('id', $id_dossier)->first();
 
         if (!$dossier) {
             return response()->json(['message' => 'Dossier non trouvé'], 404);
@@ -921,9 +941,9 @@ class NumerisationController extends Controller
 
         $id_site = $dossier->id_site;
         $folderMapping = [
-            2 => 'BAE',
-            3 => 'AKOUEDO',
-            4 => 'AGBAN',
+            3 => 'BAE',
+            2 => 'AKOUEDO',
+            1 => 'AGBAN',
         ];
         $folder = $folderMapping[$id_site] ?? 'OTHERS';
 
@@ -991,17 +1011,20 @@ class NumerisationController extends Controller
 
             if ($existingDocument) {
                 $existingDocument->update($dataToSave);
-            } else {
+            }
+            else {
                 Document::create($dataToSave);
             }
 
             // Mettre à jour le statut du dossier
             $dossier = Dossier::findOrFail($id_dossier);
             $dossier->statut_numerisation = 2;
+            $dossier->id_site = getIdSite();
             $dossier->save();
 
             return response()->json(['message' => 'Numérisation traitée et scindée (16 pages) avec succès !']);
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             Log::error("Erreur lors du découpage PDF (16 pages) : " . $e->getMessage());
             return response()->json(['message' => 'Erreur lors du traitement du fichier PDF - ' . $e->getMessage()], 500);
         }
@@ -1037,7 +1060,8 @@ class NumerisationController extends Controller
                 $rules['piece_ancien_proprietaire'] = 'required|file|mimes:jpg,jpeg,png';
                 $messages['type_piece_ancien_proprietaire.required'] = 'Le type de pièce de l\'ancien propriétaire est obligatoire.';
                 $messages['piece_ancien_proprietaire.required'] = 'La pièce de l\'ancien propriétaire est obligatoire.';
-            } else {
+            }
+            else {
                 $rules['registre_de_commerce'] = 'required|file|mimes:jpg,jpeg,png';
                 $rules['dfe'] = 'required|file|mimes:jpg,jpeg,png';
                 $messages['registre_de_commerce.required'] = 'Le registre de commerce de l\'ancien propriétaire est obligatoire.';
@@ -1050,7 +1074,8 @@ class NumerisationController extends Controller
                 $rules['piece'] = 'required|file|mimes:jpg,jpeg,png';
                 $messages['type_piece_nouveau_proprietaire.required'] = 'Le type de pièce du nouveau propriétaire est obligatoire.';
                 $messages['piece.required'] = 'La pièce du nouveau propriétaire est obligatoire.';
-            } else {
+            }
+            else {
                 $rules['registre_de_commerce_nouvelle_entreprise'] = 'required|file|mimes:jpg,jpeg,png';
                 $rules['dfe_nouvelle_entreprise'] = 'required|file|mimes:jpg,jpeg,png';
                 $messages['registre_de_commerce_nouvelle_entreprise.required'] = 'Le registre de commerce du nouveau propriétaire est obligatoire.';
@@ -1090,7 +1115,8 @@ class NumerisationController extends Controller
                 }
             }
             $existingDocument->update(array_merge($validated, $paths));
-        } else {
+        }
+        else {
             // Créer un nouveau document avec tous les fichiers
             foreach ($fileFields as $field) {
                 if ($request->hasFile($field)) {
@@ -1128,14 +1154,15 @@ class NumerisationController extends Controller
             }
 
             // Mise à jour du champ spécifique
-            $doc->{$request->field} = $path;
+            $doc->{ $request->field} = $path;
             $doc->save();
 
             return response()->json([
                 'success' => true,
                 'path' => $path
             ]);
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur serveur: ' . $e->getMessage()
@@ -1175,7 +1202,7 @@ class NumerisationController extends Controller
                     return $request->file($fieldName)->store("documents", $disk);
                 }
 
-                return $document->{$fieldName} ?? null;
+                return $document->{ $fieldName} ?? null;
             };
 
             // Mise à jour conditionnelle : uniquement si le champ est présent
@@ -1227,12 +1254,14 @@ class NumerisationController extends Controller
                 'message' => 'Document mis à jour.',
                 'data' => $documentData,
             ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        }
+        catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'status' => 'not_found',
                 'message' => 'Document introuvable.'
             ], 404);
-        } catch (\Throwable $e) {
+        }
+        catch (\Throwable $e) {
             Log::error("Erreur interne lors de la mise à jour", [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTrace()
@@ -1265,7 +1294,7 @@ class NumerisationController extends Controller
             $document = Document::findOrFail($documentId);
 
             // Mettre à jour le champ avec l'URL Cloudinary
-            $document->{$fieldName} = $fileUrl;
+            $document->{ $fieldName} = $fileUrl;
 
             // Sauvegarder les modifications
             $document->save();
@@ -1277,13 +1306,15 @@ class NumerisationController extends Controller
                 'url' => $fileUrl,
                 'field' => $fieldName
             ]);
-        } catch (ModelNotFoundException $e) {
+        }
+        catch (ModelNotFoundException $e) {
             // Si le document n'existe pas
             return response()->json([
                 'status' => 'error',
                 'message' => 'Document non trouvé.'
             ], 404);
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             // Erreur générale
             return response()->json([
                 'status' => 'error',

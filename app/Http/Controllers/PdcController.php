@@ -280,7 +280,7 @@ class PdcController extends Controller
             $dossier->id_vehicule = $vehicule->id;
             $dossier->id_client = $client->id;
             $dossier->id_user = null;
-            $dossier->id_site = getIdSite();
+            $dossier->id_site = 0;
             $dossier->id_service = 1;
             $dossier->id_type_service = 1;
             $dossier->num_chrono = $request->num_chrono ?? generateChronoNumber('OPSP');

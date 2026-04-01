@@ -26,7 +26,7 @@
                             <Input_search v-model="form.search_data" @update:modelValue="onFilterChange"
                                 placeholder="Rechercher par VIN..." class="w-full " />
                             <!-- Statut -->
-                            <Select v-model="form.statut" @update:modelValue="onFilterChange">
+                            <!-- <Select v-model="form.statut" @update:modelValue="onFilterChange">
                                 <SelectTrigger class="w-40">
                                     <SelectValue placeholder="Statut" />
                                 </SelectTrigger>
@@ -39,7 +39,7 @@
                                         <SelectItem value="3">Refusé</SelectItem>
                                     </SelectGroup>
                                 </SelectContent>
-                            </Select>
+                            </Select> -->
 
                             <!-- Dates -->
                             <!-- <DateRangePicker /> -->
@@ -58,6 +58,7 @@
                                     <TableHead>Type de service</TableHead>
                                     <TableHead>Num chrono</TableHead>
                                     <TableHead>Statut Paiement</TableHead>
+                                    <TableHead>N° Immatriculation</TableHead>
                                     <TableHead>Date</TableHead>
                                     <TableHead>Statut</TableHead>
                                     <TableHead class="text-right">Actions</TableHead>
@@ -132,6 +133,7 @@
                                                 }}
                                             </Badge>
                                         </TableCell>
+                                        <TableCell>{{ dossier?.r_dossier_vehicule?.num_immatriculation || '—' }}</TableCell>
                                         <TableCell>{{ dossier?.date_creation || '—' }}</TableCell>
 
                                         <TableCell>
