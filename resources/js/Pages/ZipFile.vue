@@ -4,14 +4,23 @@
             <i class="fa-solid fa-file-zipper"></i> Listes des dossiers numérisés
         </h1>
 
+        <!-- Fil d'Ariane / Titre du dossier -->
+        <div v-if="currentFolder" class="mb-6 flex items-center gap-2 text-gray-600">
+            <button @click="backToFolders" class="hover:text-blue-600 transition flex items-center gap-1">
+                <i class="fa-solid fa-folder-open"></i> Dossiers
+            </button>
+            <ChevronRight class="w-4 h-4" />
+            <span class="font-semibold text-gray-800">{{ currentFolder }}</span>
+        </div>
+
         <div class="mb-4 mt-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-            <!-- Filtre par date avec DateRangePicker -->
-            <div class="mb-6 flex flex-col sm:flex-row gap-4 items-center">
+            <!-- Filtre par date avec DateRangePicker (uniquement si dans un dossier) -->
+            <div v-if="currentFolder" class="mb-6 flex flex-col sm:flex-row gap-4 items-center">
                 <DateRangePicker v-model="dateRange" @update:start="onStartDateChange" @update:end="onEndDateChange" />
             </div>
 
-            <!-- Actions -->
-            <div class="mb-4 flex gap-2">
+            <!-- Actions (uniquement si dans un dossier) -->
+            <div v-if="currentFolder" class="mb-4 flex gap-2">
                 <Button v-if="filteredZips.length > 0" @click="downloadSelected" :disabled="selectedZips.length === 0" class="sm">
                     <Download class="mr-1" /> Télécharger la sélection
                 </Button>
@@ -28,13 +37,33 @@
         <div v-else-if="error" class="text-center py-4 text-red-500">
             {{ error }}
         </div>
-        <div v-else-if="filteredZips.length === 0" class="text-center py-4 text-gray-500">
-            Aucun fichier ZIP disponible.
+
+        <!-- Vue des dossiers -->
+        <div v-else-if="!currentFolder" class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div v-for="folder in folders" :key="folder.name" 
+                @click="selectFolder(folder.name)"
+                class="group p-8 bg-gray-50 hover:bg-blue-50 border-2 border-gray-100 hover:border-blue-200 rounded-2xl cursor-pointer transition-all duration-300 transform hover:-translate-y-1 text-center"
+            >
+                <div class="bg-blue-100 text-blue-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-folder text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">{{ folder.name }}</h3>
+                <p class="text-gray-500 text-sm">
+                    {{ folder.file_count || 0 }} fichier(s) numérisé(s)
+                </p>
+                <div class="mt-4 text-blue-600 font-medium flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    Ouvrir <ChevronRight class="w-4 h-4" />
+                </div>
+            </div>
         </div>
 
         <!-- Tableau des fichiers -->
         <div v-else>
-            <Table>
+            <div v-if="filteredZips.length === 0" class="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                <i class="fa-solid fa-file-circle-xmark text-4xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500">Aucun fichier ZIP disponible dans ce dossier.</p>
+            </div>
+            <Table v-else>
                 <TableHeader>
                     <TableRow>
                         <TableHead class="w-[50px]">
@@ -43,7 +72,6 @@
                         <TableHead>Nom du fichier</TableHead>
                         <TableHead>Taille</TableHead>
                         <TableHead>Date de création</TableHead>
-                        <TableHead>Emplacement</TableHead>
                         <TableHead>Action</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -56,7 +84,6 @@
                         <TableCell>{{ zip.name }}</TableCell>
                         <TableCell>{{ zip.size }}</TableCell>
                         <TableCell>{{ zip.date }}</TableCell>
-                        <TableCell>{{ 'Camp BAE Yopougon' }}</TableCell>
                         <TableCell class="flex gap-2">
                             <Button variant="outline" size="sm" @click="downloadSingle(zip)" title="Télécharger">
                                 <Download class="w-4 h-4" />
@@ -73,7 +100,7 @@
             </Table>
 
             <!-- Pagination -->
-            <div class="flex justify-center items-center gap-4 mt-6">
+            <div v-if="totalPages > 1" class="flex justify-center items-center gap-4 mt-6">
                 <Button variant="outline" @click="prevPage" :disabled="currentPage === 1" class="sm cursor-pointer">
                     <ChevronLeft class="mr-1 sm" /> Précédent
                 </Button>
@@ -93,7 +120,7 @@
     <div v-if="showUploadModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
         <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-semibold text-gray-800">Importer un fichier</h2>
+                <h2 class="text-lg font-semibold text-gray-800">Importer un fichier dans {{ currentFolder }}</h2>
                 <button @click="closeUploadModal" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
             </div>
 
@@ -151,6 +178,8 @@ import DateRangePicker from '@/components/ui/DateRangePicker.vue';
 import axios from 'axios';
 
 const zips = ref([]);
+const folders = ref([]);
+const currentFolder = ref(null);
 const filteredZips = ref([]);
 const selectedZips = ref([]);
 const loading = ref(true);
@@ -192,6 +221,8 @@ const submitUpload = async () => {
     isUploading.value = true;
     const formData = new FormData();
     formData.append('file', uploadFile.value);
+    formData.append('folder', currentFolder.value);
+
     try {
         await axios.post('/archives/zips/upload', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
@@ -207,60 +238,16 @@ const submitUpload = async () => {
     }
 };
 
-// Fonction pour simuler un délai de téléchargement
-const simulateDownload = (file) => {
-    return new Promise((resolve, reject) => {
-        try {
-            const link = document.createElement('a');
-            link.href = file.url;
-            link.download = file.name;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-
-            setTimeout(() => {
-                link.click();
-                resolve(file);
-            }, 1500);
-        } catch (err) {
-            reject(err);
-        }
-    });
-};
-
-// Fonction pour télécharger un fichier unique
 const downloadSingle = (zip) => {
-    toast.promise(
-        simulateDownload(zip),
-        {
-            loading: 'Téléchargement en cours...',
-            success: (data) => {
-                return `"${data.name}" a été téléchargé avec succès`;
-            },
-            error: (err) => {
-                console.error('Erreur de téléchargement:', err);
-                return `Échec du téléchargement de "${zip.name}"`;
-            }
-        }
-    );
+    window.open(`/archives/zips/download/${zip.name}?folder=${currentFolder.value}`, '_blank');
 };
 
-// Fonction pour télécharger plusieurs fichiers
-const downloadMultiple = (files) => {
-    const downloadPromises = files.map(file => simulateDownload(file));
-
-    toast.promise(
-        Promise.all(downloadPromises),
-        {
-            loading: `Téléchargement de ${files.length} fichier(s)...`,
-            success: (results) => {
-                return `${results.length} fichier(s) téléchargé(s) avec succès`;
-            },
-            error: (err) => {
-                console.error('Erreur de téléchargement multiple:', err);
-                return 'Échec du téléchargement de certains fichiers';
-            }
-        }
-    );
+const downloadSelected = () => {
+    if (selectedZips.value.length === 0) return;
+    
+    selectedZips.value.forEach(zip => {
+        downloadSingle(zip);
+    });
 };
 
 const getRelativePath = (url) => {
@@ -268,7 +255,6 @@ const getRelativePath = (url) => {
         const urlObj = new URL(url);
         return urlObj.pathname;
     } catch (e) {
-        console.error("Erreur lors du traitement de l'URL :", e);
         return url;
     }
 };
@@ -280,7 +266,8 @@ const renameZip = async (zip) => {
     try {
         const response = await axios.post('/archives/zips/rename', {
             old_name: zip.name,
-            new_name: newName.trim() + '.zip'
+            new_name: newName.trim() + '.zip',
+            folder: currentFolder.value
         });
 
         toast.success(response.data.message || 'Fichier renommé avec succès');
@@ -295,7 +282,9 @@ const deleteZip = async (zip) => {
     if (!window.confirm(`Êtes-vous sûr de vouloir supprimer le fichier "${zip.name}" ?`)) return;
 
     try {
-        const response = await axios.delete(`/archives/zips/delete/${zip.name}`);
+        const response = await axios.delete(`/archives/zips/delete/${zip.name}`, {
+            params: { folder: currentFolder.value }
+        });
         toast.success(response.data.message || 'Fichier supprimé avec succès');
         fetchZips();
     } catch (err) {
@@ -305,31 +294,42 @@ const deleteZip = async (zip) => {
 };
 
 const fetchZips = async () => {
+    loading.value = true;
     try {
-        const response = await fetch('/archives/zips');
-        if (!response.ok) {
-            throw new Error('Erreur lors de la récupération des fichiers');
+        const params = new URLSearchParams();
+        if (currentFolder.value) params.append('folder', currentFolder.value);
+        if (dateRange.value.start) params.append('start_date', dateRange.value.start);
+        if (dateRange.value.end) params.append('end_date', dateRange.value.end);
+
+        const response = await axios.get(`/archives/zips?${params.toString()}`);
+        const data = response.data;
+
+        if (!currentFolder.value) {
+            folders.value = data;
+        } else {
+            zips.value = data.map(zip => ({
+                ...zip,
+                url: getRelativePath(zip.url)
+            }));
+            filteredZips.value = [...zips.value];
+            applyDateFilter();
         }
-        const data = await response.json();
-        zips.value = data.map(zip => ({
-            ...zip,
-            url: getRelativePath(zip.url)
-        }));
-        filteredZips.value = [...zips.value];
     } catch (err) {
-        error.value = err.message;
+        error.value = "Erreur lors de la récupération des données";
         console.error(err);
     } finally {
         loading.value = false;
     }
 };
 
-const onStartDateChange = (start) => {
-    applyDateFilter();
+const selectFolder = (folderName) => {
+    currentFolder.value = folderName;
+    fetchZips();
 };
 
-const onEndDateChange = (end) => {
-    applyDateFilter();
+const backToFolders = () => {
+    currentFolder.value = null;
+    fetchZips();
 };
 
 const applyDateFilter = () => {
@@ -350,7 +350,10 @@ const applyDateFilter = () => {
     selectedZips.value = [];
 };
 
-const toggleSelect = (zip, checked) => {
+const onStartDateChange = () => applyDateFilter();
+const onEndDateChange = () => applyDateFilter();
+
+const toggleSelectNum = (zip, checked) => {
     if (checked) {
         if (!selectedZips.value.some(item => item.url === zip.url)) {
             selectedZips.value.push(zip);
@@ -358,7 +361,15 @@ const toggleSelect = (zip, checked) => {
     } else {
         selectedZips.value = selectedZips.value.filter(item => item.url !== zip.url);
     }
-    allSelected.value = selectedZips.value.length === paginatedZips.value.length;
+    allSelected.value = selectedZips.value.length === paginatedZips.value.length && paginatedZips.value.length > 0;
+};
+
+const toggleSelect = (zip, checked) => {
+    if (checked) {
+        selectedZips.value.push(zip);
+    } else {
+        selectedZips.value = selectedZips.value.filter(z => z.name !== zip.name);
+    }
 };
 
 const toggleSelectAll = (checked) => {
@@ -394,24 +405,10 @@ const prevPage = () => {
     }
 };
 
-const downloadSelected = () => {
-    if (selectedZips.value.length === 0) {
-        toast.error("Veuillez sélectionner au moins un fichier à télécharger.");
-        return;
-    }
-
-    if (selectedZips.value.length === 1) {
-        downloadSingle(selectedZips.value[0]);
-    } else {
-        downloadMultiple(selectedZips.value);
-    }
-};
-
 onMounted(() => {
     fetchZips();
 });
 </script>
-
 
 <script>
 import customMain from "/resources/js/Pages/customMain.vue";

@@ -15,10 +15,26 @@ class ZipController extends Controller
     }
     public function getZips(Request $request)
     {
-        // dd($request->all());
+        $folder = $request->input('folder');
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
-        $files = Storage::disk('public')->files('downloads');
+
+        if (!$folder) {
+            // Return list of available folders
+            $folders = ['AGBAN', 'AKOUEDO', 'BAE'];
+            $response = [];
+            foreach ($folders as $f) {
+                $fileCount = count(Storage::disk('public')->files("downloads/$f"));
+                $response[] = [
+                    'name' => $f,
+                    'is_folder' => true,
+                    'file_count' => $fileCount
+                ];
+            }
+            return response()->json($response);
+        }
+
+        $files = Storage::disk('public')->files("downloads/$folder");
         $zipFiles = [];
 
         foreach ($files as $file) {
@@ -43,7 +59,8 @@ class ZipController extends Controller
                     'url'  => Storage::disk('public')->url($file),
                     'size' => $this->formatSizeUnits($size),
                     'date' => date('d/m/Y H:i', $time),
-                    'timestamp' => $time
+                    'timestamp' => $time,
+                    'is_folder' => false
                 ];
             }
         }
@@ -67,9 +84,11 @@ class ZipController extends Controller
         return '0 bytes';
     }
 
-    public function download($name)
+    public function download(Request $request, $name)
     {
-        $path = 'downloads/' . $name;
+        $folder = $request->input('folder');
+        $path = $folder ? "downloads/$folder/$name" : "downloads/$name";
+
         if (!Storage::disk('public')->exists($path)) {
             return abort(404, 'Fichier introuvable');
         }
@@ -81,9 +100,11 @@ class ZipController extends Controller
         $request->validate([
             'old_name' => 'required|string',
             'new_name' => 'required|string',
+            'folder' => 'required|string',
         ]);
 
-        $oldPath = 'downloads/' . $request->old_name;
+        $folder = $request->folder;
+        $oldPath = "downloads/$folder/" . $request->old_name;
         if (!Storage::disk('public')->exists($oldPath)) {
             return response()->json(['message' => 'Fichier introuvable'], 404);
         }
@@ -92,7 +113,7 @@ class ZipController extends Controller
         if (!str_ends_with($newName, '.zip')) {
             $newName .= '.zip';
         }
-        $newPath = 'downloads/' . $newName;
+        $newPath = "downloads/$folder/" . $newName;
 
         if (Storage::disk('public')->exists($newPath)) {
             return response()->json(['message' => 'Un fichier avec ce nom existe déjà'], 400);
@@ -103,9 +124,10 @@ class ZipController extends Controller
         return response()->json(['message' => 'Fichier renommé avec succès']);
     }
 
-    public function delete($name)
+    public function delete(Request $request, $name)
     {
-        $path = 'downloads/' . $name;
+        $folder = $request->input('folder');
+        $path = "downloads/$folder/" . $name;
         if (!Storage::disk('public')->exists($path)) {
             return response()->json(['message' => 'Fichier introuvable'], 404);
         }
@@ -119,24 +141,32 @@ class ZipController extends Controller
     {
         $request->validate([
             'file' => 'required|file|mimes:zip,pdf,xls,xlsx|max:102400',
+            'folder' => 'required|string',
         ], [
             'file.required' => 'Aucun fichier sélectionné.',
             'file.mimes'    => 'Formats acceptés : ZIP, PDF, XLS, XLSX.',
             'file.max'      => 'Le fichier ne doit pas dépasser 100 Mo.',
+            'folder.required' => 'Le dossier de destination est requis.',
         ]);
 
         $uploadedFile = $request->file('file');
         $filename = $uploadedFile->getClientOriginalName();
+        $folder = $request->folder;
 
         // Éviter d'écraser un fichier existant
-        $destination = 'downloads/' . $filename;
+        $destinationDir = 'downloads/' . $folder;
+        if (!Storage::disk('public')->exists($destinationDir)) {
+            Storage::disk('public')->makeDirectory($destinationDir);
+        }
+
+        $destination = $destinationDir . '/' . $filename;
         if (Storage::disk('public')->exists($destination)) {
             $name = pathinfo($filename, PATHINFO_FILENAME);
             $ext  = pathinfo($filename, PATHINFO_EXTENSION);
             $filename = $name . '_' . now()->format('YmdHis') . '.' . $ext;
         }
 
-        $uploadedFile->storeAs('downloads', $filename, 'public');
+        $uploadedFile->storeAs($destinationDir, $filename, 'public');
 
         return response()->json(['message' => 'Fichier importé avec succès', 'filename' => $filename]);
     }
