@@ -34,7 +34,7 @@
                                     <TableHead>Rôle</TableHead>
                                     <TableHead>Site</TableHead>
                                     <TableHead>Statut</TableHead>
-                                    <TableHead>Permissions</TableHead>
+                                    <!-- <TableHead>Permissions</TableHead> -->
                                     <TableHead class="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -95,14 +95,13 @@
                                                 }}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell>
+                                        <!-- <TableCell>
                                             <div>
-                                                <!-- Bouton pour ouvrir le modal -->
                                                 <Badge @click="openModal(user)" class="cursor-pointer">
                                                     Attribuer des Permissions
                                                 </Badge>
                                             </div>
-                                        </TableCell>
+                                        </TableCell> -->
                                         <TableCell class="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger as-child>

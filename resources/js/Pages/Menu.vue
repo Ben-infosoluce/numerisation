@@ -237,7 +237,7 @@
                         </a>
                     </Link>
                 </li>
-                <li :class="{
+                <!-- <li :class="{
                     'active-page':
                         $page.component.startsWith('Admin/') &&
                         $page.component == 'Admin/ElementFacturation',
@@ -249,8 +249,8 @@
                             <span class="flex-1 ms-3 whitespace-nowrap">Elements à facturer</span>
                         </a>
                     </Link>
-                </li>
-                <li :class="{
+                </li> -->
+                <!-- <li :class="{
                     'active-page':
                         $page.component.startsWith('Admin/') &&
                         $page.component == 'Admin/entite',
@@ -262,7 +262,7 @@
                             <span class="flex-1 ms-3 whitespace-nowrap">Entités</span>
                         </a>
                     </Link>
-                </li>
+                </li> -->
                 <li :class="{
                     'active-page':
                         $page.component.startsWith('Admin/') &&
@@ -277,7 +277,7 @@
                     </Link>
                 </li>
 
-                <li :class="{
+                <!-- <li :class="{
                     'active-page':
                         $page.component.startsWith('Admin/') &&
                         $page.component == 'Admin/client',
@@ -289,7 +289,7 @@
                             <span class="flex-1 ms-3 whitespace-nowrap">Clients</span>
                         </a>
                     </Link>
-                </li>
+                </li> -->
             </ul>
         </template>
 
