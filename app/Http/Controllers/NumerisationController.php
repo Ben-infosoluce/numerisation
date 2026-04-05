@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Models\EmuciDocument;
 use App\Models\Dossier;
 use App\Models\Vehicule;
 use Illuminate\Http\Request;
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Intervention\Image\ImageManager;
 use setasign\Fpdi\Fpdi;
-
+use App\Helpers\apiHelpers;
 
 
 // ✅ Pour les règles de validation
@@ -769,13 +770,13 @@ class NumerisationController extends Controller
         // Configuration (16 pages pour 14 fichiers)
         $fieldsConfig = [
             ['field' => 'fiche_rti', 'filename' => 'rti', 'pages' => 1], // Page 1
-            ['field' => 'fiche_civio', 'filename' => 'civio', 'pages' => 1], // Page 2
-            ['field' => 'visite_technique', 'filename' => 'vtp', 'pages' => 1], // Page 3
-            ['field' => 'formulaire_recensement', 'filename' => 'fr', 'pages' => 1], // Page 4
-            ['field' => 'cni', 'filename' => 'pip', 'pages' => 1], // Page 5
-            ['field' => 'carte_professionnelle', 'filename' => 'cp', 'pages' => 1], // Page 6
-            ['field' => 'permis_conduire', 'filename' => 'pc', 'pages' => 1], // Page 7
-            ['field' => 'd3', 'filename' => 'd3', 'pages' => 3], // Pages 8, 9, 10
+            ['field' => 'fiche_civio', 'filename' => 'civio', 'pages' => 2], // Pages 2, 3
+            ['field' => 'visite_technique', 'filename' => 'vtp', 'pages' => 1], // Page 4
+            ['field' => 'formulaire_recensement', 'filename' => 'fr', 'pages' => 1], // Page 5
+            ['field' => 'cni', 'filename' => 'pip', 'pages' => 1], // Page 6
+            ['field' => 'carte_professionnelle', 'filename' => 'cp', 'pages' => 1], // Page 7
+            ['field' => 'permis_conduire', 'filename' => 'pc', 'pages' => 1], // Page 8
+            ['field' => 'd3', 'filename' => 'd3', 'pages' => 2], // Pages 9, 10
             ['field' => 'assurance', 'filename' => 'Ass', 'pages' => 1], // Page 11
             ['field' => 'fiche_demande_carte_grise', 'filename' => 'dcg', 'pages' => 1], // Page 12
             ['field' => 'recepisse_depot', 'filename' => 'rdd', 'pages' => 1], // Page 13
@@ -872,6 +873,7 @@ class NumerisationController extends Controller
             ]);
 
             Log::info("Opération terminée avec succès pour le dossier : $id_dossier");
+            $this->extractAndSaveEmuci($id_dossier, $tempPath, $dossier->r_dossier_vehicule->vin);
             return response()->json(['message' => 'Traitement réussi !']);
         } catch (\Throwable $e) {
             Log::error("CRITIQUE - Erreur traitement PDF : " . $e->getMessage());
@@ -913,13 +915,13 @@ class NumerisationController extends Controller
         // Configuration (16 pages pour 14 fichiers)
         $fieldsConfig = [
             ['field' => 'fiche_rti', 'filename' => 'rti', 'pages' => 1], // Page 1
-            ['field' => 'fiche_civio', 'filename' => 'civio', 'pages' => 1], // Page 2
-            ['field' => 'visite_technique', 'filename' => 'vtp', 'pages' => 1], // Page 3
-            ['field' => 'formulaire_recensement', 'filename' => 'fr', 'pages' => 1], // Page 4
-            ['field' => 'cni', 'filename' => 'pip', 'pages' => 1], // Page 5
-            ['field' => 'carte_professionnelle', 'filename' => 'cp', 'pages' => 1], // Page 6
-            ['field' => 'permis_conduire', 'filename' => 'pc', 'pages' => 1], // Page 7
-            ['field' => 'd3', 'filename' => 'd3', 'pages' => 3], // Pages 8, 9, 10
+            ['field' => 'fiche_civio', 'filename' => 'civio', 'pages' => 2], // Pages 2, 3
+            ['field' => 'visite_technique', 'filename' => 'vtp', 'pages' => 1], // Page 4
+            ['field' => 'formulaire_recensement', 'filename' => 'fr', 'pages' => 1], // Page 5
+            ['field' => 'cni', 'filename' => 'pip', 'pages' => 1], // Page 6
+            ['field' => 'carte_professionnelle', 'filename' => 'cp', 'pages' => 1], // Page 7
+            ['field' => 'permis_conduire', 'filename' => 'pc', 'pages' => 1], // Page 8
+            ['field' => 'd3', 'filename' => 'd3', 'pages' => 2], // Pages 9, 10
             ['field' => 'assurance', 'filename' => 'Ass', 'pages' => 1], // Page 11
             ['field' => 'fiche_demande_carte_grise', 'filename' => 'dcg', 'pages' => 1], // Page 12
             ['field' => 'recepisse_depot', 'filename' => 'rdd', 'pages' => 1], // Page 13
@@ -1010,6 +1012,7 @@ class NumerisationController extends Controller
             $dossier->id_site = getIdSite();
             $dossier->save();
 
+            $this->extractAndSaveEmuci($id_dossier, $tempPath, $vehicule->vin);
             return response()->json(['message' => 'Numérisation traitée et scindée (16 pages) avec succès !']);
         } catch (\Exception $e) {
             Log::error("Erreur lors du découpage PDF (16 pages) : " . $e->getMessage());
@@ -1323,5 +1326,78 @@ class NumerisationController extends Controller
             'chrono' => $vin,
             'dossier' => $dossiers,
         ]);
+    }
+
+    protected function extractAndSaveEmuci($id_dossier, $tempPath, $vin)
+    {
+        ini_set('memory_limit', '512M');
+        // Mapping EMUCI (16 pages)
+        $fieldsConfig = [
+            ['field' => 'rti', 'filename' => 'rti', 'pages' => 3], // P1-3 (rti+civio)
+            ['field' => 'rcil', 'filename' => 'rcil', 'pages' => 3], // P4-6 (receipts)
+            ['field' => 'pir', 'filename' => 'Pir', 'pages' => 3], // P7-9 (identities)
+            ['field' => 'dcg', 'filename' => 'dcg', 'pages' => 2], // P10-11 (Dcg+Assurance)
+            ['field' => 'd3', 'filename' => 'd3', 'pages' => 3], // P12-14 (fr+d3)
+            ['field' => 'cvt', 'filename' => 'cvt', 'pages' => 1], // P15 (vtp)
+            ['field' => 'cmc', 'filename' => 'cmc', 'pages' => 1], // P16 (rdd)
+        ];
+
+        try {
+            $pdf = new Fpdi();
+            $pageCount = $pdf->setSourceFile($tempPath);
+            $currentPage = 1;
+
+            $paths = [];
+            foreach ($fieldsConfig as $config) {
+                if ($currentPage > $pageCount)
+                    break;
+
+                $newPdf = new Fpdi();
+                for ($i = 0; $i < $config['pages']; $i++) {
+                    if ($currentPage > $pageCount)
+                        break;
+                    $newPdf->setSourceFile($tempPath);
+                    $template = $newPdf->importPage($currentPage);
+                    $size = $newPdf->getTemplateSize($template);
+                    $newPdf->addPage($size['orientation'], [$size['width'], $size['height']]);
+                    $newPdf->useTemplate($template);
+                    $currentPage++;
+                }
+
+                $output = $newPdf->Output('S');
+                $fileName = 'numerisations/emuci/' . $vin . '/' . $config['filename'] . '.pdf';
+                Storage::disk('public')->put($fileName, $output);
+                $paths[$config['field']] = $fileName;
+            }
+
+            EmuciDocument::updateOrCreate(['id_dossier' => $id_dossier], $paths);
+            return true;
+        } catch (\Throwable $e) {
+            Log::error("Erreur extraction EMUCI pour dossier $id_dossier : " . $e->getMessage());
+            return false;
+        }
+    }
+
+
+    protected function sendDocumentDataRequest()
+    {
+        $numChronoCil = "ABJ253698";
+        $numeroChassisVehicule = "JTBTB65155";
+        $numImmat = "AA-697-AZ";
+
+        $listeDocuments = [
+            "Liste_documents" => [
+                ["Code_document" => "at", "Url_document" => "https://cidata.cilogistique.ci/IMAGESERVICE_WEB/IMAGES/ABJ23FS1010/at.pdf"],
+                ["Code_document" => "bae", "Url_document" => "https://cidata.cilogistique.ci/IMAGESERVICE_WEB/IMAGES/ABJ23FS1010/bae.pdf"],
+                // Ajoutez les autres documents ici
+            ]
+        ];
+
+        try {
+            $result = sendDocumentData($numChronoCil, $numeroChassisVehicule, $numImmat, $listeDocuments);
+            return response()->json($result);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }

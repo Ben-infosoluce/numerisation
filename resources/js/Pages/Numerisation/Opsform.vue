@@ -86,7 +86,7 @@
                                     modal-title="Aperçu du scan global" 
                                 />
                                 <p class="text-sm text-gray-500 italic">
-                                    Note : Le fichier doit contenir les 14 pièces dans l'ordre (1. RTI, 2. CIVIO, 3. Visite Technique, 4. Recensement, 5. CNI, 6. Carte Pro, 7. Permis, 8. Douanes (D3 - 3 pages), 9. Assurance, 10. Fiche de demande carte grise, 11. Récépissé dépôt, 12. Reçu DGTTC, 13. Reçu EMU-CI, 14. Reçu QUIPUX).
+                                    Note : Le fichier doit contenir les 14 pièces dans l'ordre (1. RTI (1 page), 2. CIVIO (2 pages), 3. Visite Technique (1 page), 4. Recensement (1 page), 5. CNI (1 page), 6. Carte Pro (1 page), 7. Permis (1 page), 8. Douanes (D3 - 2 pages), 9. Assurance (1 page), 10. Fiche de demande carte grise (1 page), 11. Récépissé dépôt (1 page), 12. Reçu DGTTC (1 page), 13. Reçu EMU-CI (1 page), 14. Reçu QUIPUX (1 page)).
                                 </p>
                             </div>
                         </div>

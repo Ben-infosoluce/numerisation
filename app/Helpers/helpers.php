@@ -9,6 +9,8 @@ use App\Models\DetailTypeService;
 use App\Models\Service;
 use Illuminate\Support\Facades\DB;
 
+use Illuminate\Support\Facades\Http;
+
 
 function generateImmatriculation($prefix = 'CI', $length = 8)
 {
@@ -154,6 +156,54 @@ function servicesAccessibles()
 
     // Retourne les IDs uniques des services pour le site de l'utilisateur
     return DetailTypeService::where('id_site', $user->id_site)
-        ->distinct()         // sélectionne seulement les valeurs uniques
+        ->distinct() // sélectionne seulement les valeurs uniques
         ->pluck('id_service');
+}
+
+
+
+if (!function_exists('getFreshHashAndTime')) {
+    function getFreshHashAndTime()
+    {
+        $response = Http::accept('application/json')
+            ->get('https://rbadd.digimmat.ci/api/hsign');
+
+        if ($response->successful()) {
+            $data = $response->json();
+            return [
+                'time' => $data['time'],
+                'hash' => $data['hash'],
+            ];
+        }
+
+        throw new Exception("Impossible de récupérer le hash et le timestamp.");
+    }
+}
+
+if (!function_exists('sendPlateNumberData')) {
+    function sendDocumentData($numChronoCil, $numeroChassisVehicule, $numImmat, $listeDocuments)
+    {
+        // Récupérer le hash et le timestamp frais
+        $authData = getFreshHashAndTime();
+        $time = $authData['time'];
+        $hash = $authData['hash'];
+
+        // Construire l'URL de l'API avec le time et le hash
+        $url = "https://rbadd.digimmat.ci/api/plate-number-dgttc/completion/{$time}/{$hash}";
+
+        // Préparer les données à envoyer
+        $payload = [
+            'numChronoCil' => $numChronoCil,
+            'numeroChassisVehicule' => $numeroChassisVehicule,
+            'numImmat' => $numImmat,
+            'liste_documents' => $listeDocuments,
+        ];
+
+        // Envoyer la requête POST
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+        ])->post($url, $payload);
+
+        return $response->json();
+    }
 }
