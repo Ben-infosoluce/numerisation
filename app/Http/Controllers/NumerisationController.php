@@ -1444,37 +1444,37 @@ class NumerisationController extends Controller
                 [
                     "Code_document" => "rti",
                     "Libelle_document" => "réception à titre isolé",
-                    "Url_document" => $emuciDocument->rti ? asset('storage/' . $emuciDocument->rti) : ''
+                    "Url_document" => $emuciDocument->rti ? 'https://placenett.net/storage/' . $emuciDocument->rti : ''
                 ],
                 [
                     "Code_document" => "rcil",
                     "Libelle_document" => "reçu CIL",
-                    "Url_document" => $emuciDocument->rcil ? asset('storage/' . $emuciDocument->rcil) : ''
+                    "Url_document" => $emuciDocument->rcil ? 'https://placenett.net/storage/' . $emuciDocument->rcil : ''
                 ],
                 [
                     "Code_document" => "pir",
                     "Libelle_document" => "Pièce d'identité recto ; Pièce d'identité recto du gérant",
-                    "Url_document" => $emuciDocument->pir ? asset('storage/' . $emuciDocument->pir) : ''
+                    "Url_document" => $emuciDocument->pir ? 'https://placenett.net/storage/' . $emuciDocument->pir : ''
                 ],
                 [
                     "Code_document" => "dcg",
                     "Libelle_document" => "demande de carte grise",
-                    "Url_document" => $emuciDocument->dcg ? asset('storage/' . $emuciDocument->dcg) : ''
+                    "Url_document" => $emuciDocument->dcg ? 'https://placenett.net/storage/' . $emuciDocument->dcg : ''
                 ],
                 [
                     "Code_document" => "d3",
                     "Libelle_document" => "déclaration D3",
-                    "Url_document" => $emuciDocument->d3 ? asset('storage/' . $emuciDocument->d3) : ''
+                    "Url_document" => $emuciDocument->d3 ? 'https://placenett.net/storage/' . $emuciDocument->d3 : ''
                 ],
                 [
                     "Code_document" => "cvt",
                     "Libelle_document" => "contrôle visite technique",
-                    "Url_document" => $emuciDocument->cvt ? asset('storage/' . $emuciDocument->cvt) : ''
+                    "Url_document" => $emuciDocument->cvt ? 'https://placenett.net/storage/' . $emuciDocument->cvt : ''
                 ],
                 [
                     "Code_document" => "cmc",
                     "Libelle_document" => "certificat de mise à la consommation",
-                    "Url_document" => $emuciDocument->cmc ? asset('storage/' . $emuciDocument->cmc) : ''
+                    "Url_document" => $emuciDocument->cmc ? 'https://placenett.net/storage/' . $emuciDocument->cmc : ''
                 ],
             ]
         ];

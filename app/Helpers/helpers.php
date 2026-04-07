@@ -168,50 +168,121 @@ function servicesAccessibles()
 if (!function_exists('getFreshHashAndTime')) {
     function getFreshHashAndTime()
     {
-        $response = Http::accept('application/json')
-            ->get('https://rbadd.digimmat.ci/api/hsign');
+        $baseUrl  = config('digimmat.base_url');
+        $username = config('digimmat.username');
+        $password = config('digimmat.password');
 
-        if ($response->successful()) {
-            $data = $response->json();
+        // Utiliser une instance Http avec support des cookies (CookieJar explicite pour éviter l'erreur Guzzle)
+        $client = Http::withOptions(['cookies' => new \GuzzleHttp\Cookie\CookieJar(), 'verify' => false]);
 
-            if (!$data || !isset($data['time']) || !isset($data['hash'])) {
-                Log::error("Réponse invalide de l'API hsign", ['data' => $data]);
-                throw new Exception("Réponse invalide de l'API hsign : données manquantes.");
+        try {
+            // 1. Récupérer la page de login pour avoir le cookie JSESSIONID et le token CSRF
+            $loginPageResponse = $client->get("$baseUrl/login");
+            if (!$loginPageResponse->successful()) {
+                throw new Exception("Impossible d'accéder à la page de login de l'API.");
             }
 
-            return [
-                'time' => $data['time'],
-                'hash' => $data['hash'],
-            ];
-        }
+            $html = $loginPageResponse->body();
+            // Extraction du token CSRF via regex simple
+            if (preg_match('/name="_csrf" type="hidden" value="([^"]+)"/', $html, $matches)) {
+                $csrfToken = $matches[1];
+            }
+            else {
+                throw new Exception("Token CSRF non trouvé sur la page de login.");
+            }
 
-        throw new Exception("Impossible de récupérer le hash et le timestamp.");
+            // 2. Effectuer le login
+            $loginResponse = $client->asForm()->post("$baseUrl/login", [
+                'username' => $username,
+                'password' => $password,
+                '_csrf' => $csrfToken,
+            ]);
+
+            if (!$loginResponse->successful()) {
+                Log::error("Échec de l'authentification sur l'API Digimmat", [
+                    'status' => $loginResponse->status(),
+                    'body' => $loginResponse->body()
+                ]);
+                throw new Exception("Échec de l'authentification sur l'API.");
+            }
+
+            // 3. Récupérer le hash et le timestamp sur l'endpoint protégé
+            $response = $client->accept('application/json')->get("$baseUrl/api/hsign");
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                if (!$data || !isset($data['time']) || !isset($data['hash'])) {
+                    Log::error("Réponse invalide de l'API hsign après login", ['data' => $data]);
+                    throw new Exception("Réponse invalide de l'API hsign : données manquantes.");
+                }
+
+                Log::info("Authentification réussie sur l'API Digimmat", [
+                    'time' => $data['time'],
+                    'hash' => $data['hash']
+                ]);
+
+                return [
+                    'time' => $data['time'],
+                    'hash' => $data['hash'],
+                    'cookies' => $client->getOptions()['cookies'] // Retourner le cookie jar
+                ];
+            }
+
+            throw new Exception("Impossible de récupérer le hash et le timestamp après authentification (Status: " . $response->status() . ").");
+
+        }
+        catch (\Throwable $e) {
+            Log::error("Erreur critique getFreshHashAndTime : " . $e->getMessage());
+            throw $e;
+        }
     }
 }
 
 if (!function_exists('sendPlateNumberData')) {
     function sendDocumentData($numChronoCil, $numeroChassisVehicule, $numImmat, $listeDocuments)
     {
-        // Récupérer le hash et le timestamp frais
+        // Récupérer le hash, le timestamp et la SESSION (cookies)
         $authData = getFreshHashAndTime();
         $time = $authData['time'];
         $hash = $authData['hash'];
+        $cookies = $authData['cookies'];
 
         // Construire l'URL de l'API avec le time et le hash
         $url = "https://rbadd.digimmat.ci/api/plate-number-dgttc/completion/{$time}/{$hash}";
 
         // Préparer les données à envoyer
+        $documentList = $listeDocuments['Liste_documents'] ?? $listeDocuments;
+
         $payload = [
             'numChronoCil' => $numChronoCil,
             'numeroChassisVehicule' => $numeroChassisVehicule,
             'numImmat' => $numImmat,
-            'liste_documents' => $listeDocuments,
+            // Selon l'exemple fonctionnel final, liste_documents doit être une STRING JSON 
+            // contenant un objet avec la clé 'Liste_documents'.
+            'liste_documents' => json_encode([
+                'Liste_documents' => $documentList
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         ];
 
-        // Envoyer la requête POST
-        $response = Http::withHeaders([
+        Log::info("Envoi des documents à l'API Digimmat", [
+            'url' => $url,
+            'payload' => $payload
+        ]);
+
+        // Envoyer la requête POST avec LES COOKIES d'authentification
+        $response = Http::withOptions([
+            'cookies' => $cookies,
+            'verify' => false
+        ])->withHeaders([
             'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
         ])->post($url, $payload);
+
+        Log::info("Réponse de l'API Digimmat", [
+            'status' => $response->status(),
+            'body' => $response->body()
+        ]);
 
         return $response->json();
     }
