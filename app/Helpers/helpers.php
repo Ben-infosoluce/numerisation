@@ -10,6 +10,7 @@ use App\Models\Service;
 use Illuminate\Support\Facades\DB;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 
 function generateImmatriculation($prefix = 'CI', $length = 8)
@@ -56,7 +57,8 @@ function getUserWithRelation($id)
     $user = User::with(["r_user_role", "r_user_site", 'r_user_permissions'])->find($id);
     if ($user) {
         return $user;
-    } else {
+    }
+    else {
         return null;
     }
 }
@@ -123,7 +125,8 @@ function generateChronoNumber(string $service)
                 'counter' => 1,
             ]);
             $counter = 1;
-        } else {
+        }
+        else {
             // Incrémente en base (atomic)
             DB::table('chronos')
                 ->where('id', $row->id)
@@ -170,6 +173,12 @@ if (!function_exists('getFreshHashAndTime')) {
 
         if ($response->successful()) {
             $data = $response->json();
+
+            if (!$data || !isset($data['time']) || !isset($data['hash'])) {
+                Log::error("Réponse invalide de l'API hsign", ['data' => $data]);
+                throw new Exception("Réponse invalide de l'API hsign : données manquantes.");
+            }
+
             return [
                 'time' => $data['time'],
                 'hash' => $data['hash'],
