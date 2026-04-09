@@ -24,6 +24,9 @@
                 <Button v-if="filteredZips.length > 0" @click="downloadSelected" :disabled="selectedZips.length === 0" class="sm">
                     <Download class="mr-1" /> Télécharger la sélection
                 </Button>
+                <Button v-if="filteredZips.length > 0" @click="deleteSelected" :disabled="selectedZips.length === 0" class="sm bg-red-600 hover:bg-red-700 text-white">
+                    <Trash2 class="w-4 h-4 mr-1" /> Supprimer la sélection
+                </Button>
                 <Button @click="showUploadModal = true" class="sm bg-blue-600 hover:bg-blue-700 text-white">
                     <Upload class="w-4 h-4 mr-1" /> Importer un fichier
                 </Button>
@@ -242,12 +245,53 @@ const downloadSingle = (zip) => {
     window.open(`/archives/zips/download/${zip.name}?folder=${currentFolder.value}`, '_blank');
 };
 
-const downloadSelected = () => {
+const downloadSelected = async () => {
     if (selectedZips.value.length === 0) return;
     
-    selectedZips.value.forEach(zip => {
-        downloadSingle(zip);
-    });
+    try {
+        const response = await axios.post('/archives/zips/bulk-download', {
+            files: selectedZips.value.map(z => z.name),
+            folder: currentFolder.value
+        }, {
+            responseType: 'blob'
+        });
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `téléchargement_groupé_${new Date().getTime()}.zip`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        
+        toast.success('Téléchargement lancé');
+    } catch (err) {
+        toast.error('Erreur lors du téléchargement groupé');
+        console.error(err);
+    }
+};
+
+const deleteSelected = async () => {
+    if (selectedZips.value.length === 0) return;
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer les ${selectedZips.value.length} fichiers sélectionnés ?`)) return;
+
+    try {
+        const response = await axios.delete('/archives/zips/bulk-delete', {
+            data: {
+                files: selectedZips.value.map(z => z.name),
+                folder: currentFolder.value
+            }
+        });
+
+        toast.success(response.data.message || 'Fichiers supprimés avec succès');
+        selectedZips.value = [];
+        allSelected.value = false;
+        fetchZips();
+    } catch (err) {
+        toast.error(err.response?.data?.message || 'Erreur lors de la suppression groupée');
+        console.error(err);
+    }
 };
 
 const getRelativePath = (url) => {
@@ -366,10 +410,13 @@ const toggleSelectNum = (zip, checked) => {
 
 const toggleSelect = (zip, checked) => {
     if (checked) {
-        selectedZips.value.push(zip);
+        if (!selectedZips.value.some(z => z.name === zip.name)) {
+            selectedZips.value.push(zip);
+        }
     } else {
         selectedZips.value = selectedZips.value.filter(z => z.name !== zip.name);
     }
+    allSelected.value = selectedZips.value.length === paginatedZips.value.length && paginatedZips.value.length > 0;
 };
 
 const toggleSelectAll = (checked) => {

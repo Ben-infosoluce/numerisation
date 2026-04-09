@@ -95,7 +95,7 @@
                                     <TableCell>{{ dossier?.r_dossier_vehicule?.vin || '—' }}</TableCell>
                                     <TableCell>{{ dossier?.r_dossier_vehicule?.marque || '—' }}</TableCell>
                                     <TableCell>
-                                        {{ dossier?.r_dossier_services?.r_service_types?.[0]?.nom_type_service || '—'
+                                        {{ 'Opérations Spéciales - FDS'
                                         }}
                                     </TableCell>
                                     <TableCell>{{ dossier?.num_chrono || '—' }}</TableCell>

@@ -312,8 +312,10 @@ Route::group([
     Route::get('/archives/zips', [ZipController::class , 'getZips'])->name('zips.get');
     Route::get('/archives/zips/list', [ZipController::class , 'zipList'])->name('zips.list');
     Route::get('/archives/zips/download/{name}', [ZipController::class , 'download'])->name('zips.download');
+    Route::post('/archives/zips/bulk-download', [ZipController::class , 'bulkDownload'])->name('zips.bulk-download');
     Route::post('/archives/zips/rename', [ZipController::class , 'rename'])->name('zips.rename');
     Route::delete('/archives/zips/delete/{name}', [ZipController::class , 'delete'])->name('zips.delete');
+    Route::delete('/archives/zips/bulk-delete', [ZipController::class , 'bulkDelete'])->name('zips.bulk-delete');
     Route::post('/archives/zips/upload', [ZipController::class , 'upload'])->name('zips.upload');
 });
 

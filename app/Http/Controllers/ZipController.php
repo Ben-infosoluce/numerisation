@@ -137,6 +137,72 @@ class ZipController extends Controller
         return response()->json(['message' => 'Fichier supprimé avec succès']);
     }
 
+    public function bulkDelete(Request $request)
+    {
+        $request->validate([
+            'files' => 'required|array',
+            'folder' => 'required|string',
+        ]);
+
+        $folder = $request->folder;
+        $filesToDelete = $request->input('files');
+
+        $deletedCount = 0;
+        foreach ($filesToDelete as $filename) {
+            $path = "downloads/$folder/" . $filename;
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+                $deletedCount++;
+            }
+        }
+
+        return response()->json(['message' => "$deletedCount fichier(s) supprimé(s) avec succès"]);
+    }
+
+    public function bulkDownload(Request $request)
+    {
+        $request->validate([
+            'files' => 'required|array',
+            'folder' => 'required|string',
+        ]);
+
+        $folder = $request->folder;
+        $filesToZip = $request->input('files');
+
+        if (empty($filesToZip)) {
+            return response()->json(['message' => 'Aucun fichier sélectionné'], 400);
+        }
+
+        $zip = new \ZipArchive();
+        $zipName = 'bulk_download_' . time() . '.zip';
+        $zipPath = storage_path('app/public/downloads/' . $zipName);
+
+        // Ensure directory exists
+        if (!file_exists(dirname($zipPath))) {
+            mkdir(dirname($zipPath), 0755, true);
+        }
+
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== TRUE) {
+            return response()->json(['message' => 'Impossible de créer le fichier ZIP'], 500);
+        }
+
+        foreach ($filesToZip as $filename) {
+            $filePath = "downloads/$folder/" . $filename;
+            if (Storage::disk('public')->exists($filePath)) {
+                $absolutePath = Storage::disk('public')->path($filePath);
+                $zip->addFile($absolutePath, $filename);
+            }
+        }
+
+        $zip->close();
+
+        if (!file_exists($zipPath)) {
+            return response()->json(['message' => 'Erreur lors de la génération du ZIP'], 500);
+        }
+
+        return response()->download($zipPath)->deleteFileAfterSend(true);
+    }
+
     public function upload(Request $request)
     {
         $request->validate([

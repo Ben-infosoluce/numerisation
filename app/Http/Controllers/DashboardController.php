@@ -116,9 +116,9 @@ class DashboardController extends Controller
             COUNT(CASE WHEN statut = 1 THEN 1 END) AS `En attente de traitement`
         ')
             ->whereBetween(
-            DB::raw('STR_TO_DATE(date_creation, "%Y-%m-%d")'),
-        [$start, $end]
-        )
+                DB::raw('STR_TO_DATE(date_creation, "%Y-%m-%d")'),
+                [$start, $end]
+            )
             ->groupBy('month', 'name')
             ->orderBy('month')
             ->get();
@@ -205,7 +205,7 @@ class DashboardController extends Controller
 
     public function getAdminGlobalStats(Request $request)
     {
-        // Période
+        // 🔹 Période
         $periode = $request->input('periode', 'today');
 
         switch ($periode) {
@@ -231,50 +231,61 @@ class DashboardController extends Controller
         }
 
         /**
-         * 1️⃣ TOTAL ENRÔLEMENT (date_creation)
+         * ⚠️ IMPORTANT
+         * date_creation est VARCHAR → conversion obligatoire
          */
-        $totalSites = DB::table('dossiers')
-            ->join('sites', function ($join) {
-            $join->on('dossiers.id_site', '=', 'sites.id')
-                ->orOn('dossiers.id_site', '=', DB::raw(0));
-        })
-            ->whereBetween('dossiers.date_creation', [$startDate, $endDate])
-            ->select('sites.nom_site', DB::raw('COUNT(*) as total'))
-            ->groupBy('sites.nom_site')
-            ->get();
-
-        // $totalSites = DB::table('dossiers')
-        //     ->whereBetween('date_creation', [$startDate, $endDate])
-        //     ->count();
+        $dateFilter = function ($query) use ($startDate, $endDate) {
+            $query->whereBetween(
+                DB::raw('STR_TO_DATE(dossiers.date_creation, "%Y-%m-%d %H:%i:%s")'),
+                [$startDate, $endDate]
+            );
+        };
 
         /**
-         * 2️⃣ DOSSIERS NUMÉRISÉS (date_numerisation)
+         * 1️⃣ TOTAL ENRÔLEMENT
+         */
+        $totalEnrolement = DB::table('dossiers')
+            ->where($dateFilter)
+            ->count();
+
+        /**
+         * 2️⃣ DOSSIERS NUMÉRISÉS
          */
         $dossiersNumerises = DB::table('dossiers')
-            ->join('sites', 'dossiers.id_site', '=', 'sites.id')
-            ->whereNotNull('dossiers.date_numerisation')
-            ->whereBetween('dossiers.date_numerisation', [$startDate, $endDate])
-            ->select('sites.nom_site', DB::raw('COUNT(*) as total'))
-            ->groupBy('sites.nom_site')
-            ->get();
+            ->where($dateFilter)
+            ->where('statut_numerisation', 2)
+            ->count();
 
         /**
-         * 3️⃣ DOSSIERS EN ATTENTE (statut = 1)
-         * basé sur date_creation (logique métier)
+         * 3️⃣ DOSSIERS EN ATTENTE
          */
-        $attenteSites = DB::table('dossiers')
-            ->join('sites', 'dossiers.id_site', '=', 'sites.id')
-            ->where('dossiers.statut', 1)
-            ->whereBetween('dossiers.date_creation', [$startDate, $endDate])
-            ->select('sites.nom_site', DB::raw('COUNT(*) as total'))
-            ->groupBy('sites.nom_site')
+        $enAttente = DB::table('dossiers')
+            ->where($dateFilter)
+            ->where('statut_numerisation', 1)
+            ->count();
+
+        /**
+         * 📊 4️⃣ GRAPH — NUMÉRISÉS PAR SITE
+         */
+        $numerisesParSite = DB::table('dossiers')
+            ->leftJoin('sites', 'dossiers.id_site', '=', 'sites.id')
+            ->where($dateFilter)
+            ->where('dossiers.statut_numerisation', 2)
+            ->select(
+                DB::raw("COALESCE(sites.nom_site, 'GLOBAL') as nom_site"),
+                DB::raw('COUNT(*) as total')
+            )
+            ->groupBy('nom_site')
             ->get();
 
         return response()->json([
             'periode' => $periode,
-            'total_sites' => $totalSites,
+            // KPI
+            'total_enrolement' => $totalEnrolement,
             'dossiers_numerises' => $dossiersNumerises,
-            'attente_sites' => $attenteSites,
+            'en_attente' => $enAttente,
+            // Graph
+            'numerises_par_site' => $numerisesParSite,
         ]);
     }
 }

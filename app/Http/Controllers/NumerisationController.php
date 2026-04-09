@@ -884,7 +884,7 @@ class NumerisationController extends Controller
             ]);
 
             Log::info("Opération terminée avec succès pour le dossier : $id_dossier");
-            $this->extractAndSaveEmuci($id_dossier, $tempPath, $dossier->r_dossier_vehicule->vin);
+            $this->extractAndSaveEmuci($id_dossier, $tempPath, $dossier->r_dossier_vehicule->vin, $dossier->num_chrono);
             $this->sendDocumentDataRequest($id_dossier);
             return response()->json(['message' => 'Traitement réussi !']);
         }
@@ -1032,7 +1032,7 @@ class NumerisationController extends Controller
             $dossier->id_site = getIdSite();
             $dossier->save();
 
-            $this->extractAndSaveEmuci($id_dossier, $tempPath, $vehicule->vin);
+            $this->extractAndSaveEmuci($id_dossier, $tempPath, $vehicule->vin, $dossier->num_chrono);
             $this->sendDocumentDataRequest($id_dossier);
             return response()->json(['message' => 'Numérisation traitée et scindée (16 pages) avec succès !']);
         }
@@ -1364,7 +1364,7 @@ class NumerisationController extends Controller
         ]);
     }
 
-    protected function extractAndSaveEmuci($id_dossier, $tempPath, $vin)
+    protected function extractAndSaveEmuci($id_dossier, $tempPath, $vin, $num_chrono)
     {
         ini_set('memory_limit', '512M');
         // Mapping EMUCI (16 pages)
@@ -1401,7 +1401,7 @@ class NumerisationController extends Controller
                 }
 
                 $output = $newPdf->Output('S');
-                $fileName = 'numerisations/emuci/' . $vin . '/' . $config['filename'] . '.pdf';
+                $fileName = 'numerisations/emuci/' . $num_chrono . '/' . $config['filename'] . '.pdf';
                 Storage::disk('public')->put($fileName, $output);
                 $paths[$config['field']] = $fileName;
             }
