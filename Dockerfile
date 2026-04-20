@@ -24,9 +24,9 @@ RUN apk add --no-cache \
     oniguruma-dev \
     linux-headers
 
-# Install PHP extensions
+# Install PHP extensions (Ajout de 'ftp' ici)
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd pdo_mysql mbstring zip exif pcntl bcmath intl
+    && docker-php-ext-install -j$(nproc) gd pdo_mysql mbstring zip exif pcntl bcmath intl ftp
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
