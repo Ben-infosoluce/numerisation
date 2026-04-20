@@ -77,18 +77,50 @@ class DashboardController extends Controller
         // Forcer la langue française pour les noms de mois
         DB::statement("SET lc_time_names = 'fr_FR'");
 
-        $results = DB::table('dossiers')
+        $query1 = DB::table('dossiers')
             ->selectRaw('
-        DATE_FORMAT(STR_TO_DATE(date_creation, "%Y-%m-%d"), "%M") AS name,
-        COUNT(*) as Total,
-        COUNT(CASE WHEN statut = 4 THEN 1 END) AS `En cours de traitement`,
-        COUNT(CASE WHEN statut_numerisation = 2 THEN 1 END) AS `Dossier numérisé`,
-        COUNT(CASE WHEN statut = 1 THEN 1 END) AS `En attente de traitement`
-    ')
-            ->whereNotNull('date_creation')
+                DATE_FORMAT(STR_TO_DATE(date_creation, "%Y-%m-%d"), "%M") AS name,
+                1 AS is_total,
+                CASE WHEN statut = 4 THEN 1 ELSE 0 END AS is_en_cours,
+                0 AS is_numerise,
+                CASE WHEN statut = 1 THEN 1 ELSE 0 END AS is_en_attente
+            ')
+            ->whereNotNull('date_creation');
+
+        $query2 = DB::table('dossiers')
+            ->selectRaw('
+                DATE_FORMAT(STR_TO_DATE(date_numerisation, "%Y-%m-%d"), "%M") AS name,
+                0 AS is_total,
+                0 AS is_en_cours,
+                1 AS is_numerise,
+                0 AS is_en_attente
+            ')
+            ->where('statut_numerisation', 2)
+            ->whereNotNull('date_numerisation');
+
+        $unionQuery = $query1->unionAll($query2);
+
+        $results = DB::table(DB::raw("({$unionQuery->toSql()}) as combined_data"))
+            ->mergeBindings($unionQuery)
+            ->selectRaw('
+                name,
+                SUM(is_total) as Total,
+                SUM(is_en_cours) AS `En cours de traitement`,
+                SUM(is_numerise) AS `Dossier numérisé`,
+                SUM(is_en_attente) AS `En attente de traitement`
+            ')
             ->groupBy('name')
             ->orderByRaw("STR_TO_DATE(CONCAT('2025-', name, '-01'), '%Y-%M-%d')")
             ->get();
+
+        // Caster les valeurs en entiers pour correspondre au format précédent
+        $results->transform(function ($item) {
+            $item->Total = (int)$item->Total;
+            $item->{ 'En cours de traitement'} = (int)$item->{ 'En cours de traitement'};
+            $item->{ 'Dossier numérisé'} = (int)$item->{ 'Dossier numérisé'};
+            $item->{ 'En attente de traitement'} = (int)$item->{ 'En attente de traitement'};
+            return $item;
+        });
 
         return response()->json($results);
     }
@@ -116,9 +148,9 @@ class DashboardController extends Controller
             COUNT(CASE WHEN statut = 1 THEN 1 END) AS `En attente de traitement`
         ')
             ->whereBetween(
-                DB::raw('STR_TO_DATE(date_creation, "%Y-%m-%d")'),
-                [$start, $end]
-            )
+            DB::raw('STR_TO_DATE(date_creation, "%Y-%m-%d")'),
+        [$start, $end]
+        )
             ->groupBy('month', 'name')
             ->orderBy('month')
             ->get();
@@ -205,63 +237,84 @@ class DashboardController extends Controller
 
     public function getAdminGlobalStats(Request $request)
     {
-        // 🔹 Période
-        $periode = $request->input('periode', 'today');
+        // 🔹 Période custom (DateRangePicker)
+        $dateStartParam = $request->query('date_start');
+        $dateEndParam = $request->query('date_end');
 
-        switch ($periode) {
-            case 'today':
-                $startDate = now()->startOfDay();
-                $endDate = now()->endOfDay();
-                break;
-            case 'week':
-                $startDate = now()->startOfWeek();
-                $endDate = now()->endOfWeek();
-                break;
-            case 'month':
-                $startDate = now()->startOfMonth();
-                $endDate = now()->endOfMonth();
-                break;
-            case 'year':
-                $startDate = now()->startOfYear();
-                $endDate = now()->endOfYear();
-                break;
-            default:
-                $startDate = now()->startOfDay();
-                $endDate = now()->endOfDay();
+        if ($dateStartParam && $dateEndParam && $dateStartParam !== '0' && $dateEndParam !== '0') {
+            $startDate = Carbon::parse($dateStartParam)->startOfDay();
+            $endDate = Carbon::parse($dateEndParam)->endOfDay();
+            $periode = 'custom';
+        }
+        else {
+            // 🔹 Période par défaut
+            $periode = $request->input('periode', 'today');
+
+            switch ($periode) {
+                case 'today':
+                    $startDate = now()->startOfDay();
+                    $endDate = now()->endOfDay();
+                    break;
+                case 'week':
+                    $startDate = now()->startOfWeek();
+                    $endDate = now()->endOfWeek();
+                    break;
+                case 'month':
+                    $startDate = now()->startOfMonth();
+                    $endDate = now()->endOfMonth();
+                    break;
+                case 'year':
+                    $startDate = now()->startOfYear();
+                    $endDate = now()->endOfYear();
+                    break;
+                default:
+                    $startDate = now()->startOfDay();
+                    $endDate = now()->endOfDay();
+            }
         }
 
         /**
-         * ⚠️ IMPORTANT
-         * date_creation est VARCHAR → conversion obligatoire
+         * ⚠️ FILTRES DE DATE
+         * date_creation = VARCHAR → STR_TO_DATE nécessaire
+         * date_paiement = dateTime natif
+         * date_numerisation = dateTime natif
          */
-        $dateFilter = function ($query) use ($startDate, $endDate) {
+        $dateCreationFilter = function ($query) use ($startDate, $endDate) {
             $query->whereBetween(
                 DB::raw('STR_TO_DATE(dossiers.date_creation, "%Y-%m-%d %H:%i:%s")'),
-                [$startDate, $endDate]
+            [$startDate, $endDate]
             );
         };
 
+        $dateNumerisationFilter = function ($query) use ($startDate, $endDate) {
+            $query->whereBetween('dossiers.date_numerisation', [$startDate, $endDate]);
+        };
+
         /**
-         * 1️⃣ TOTAL ENRÔLEMENT
+         * 1️⃣ TOTAL ENRÔLEMENT (tous les dossiers enregistrés)
          */
         $totalEnrolement = DB::table('dossiers')
-            ->where($dateFilter)
+            ->where($dateCreationFilter)
             ->count();
 
         /**
          * 2️⃣ DOSSIERS NUMÉRISÉS
          */
         $dossiersNumerises = DB::table('dossiers')
-            ->where($dateFilter)
+            ->where($dateNumerisationFilter)
             ->where('statut_numerisation', 2)
             ->count();
 
         /**
          * 3️⃣ DOSSIERS EN ATTENTE
+         * Tous les dossiers enregistrés sur la période qui n'ont pas encore été numérisés
          */
         $enAttente = DB::table('dossiers')
-            ->where($dateFilter)
-            ->where('statut_numerisation', 1)
+            ->where($dateCreationFilter)
+            ->where(function ($query) {
+            $query->where('statut_numerisation', '!=', 2)
+                ->orWhereNull('statut_numerisation');
+        })
             ->count();
 
         /**
@@ -269,12 +322,12 @@ class DashboardController extends Controller
          */
         $numerisesParSite = DB::table('dossiers')
             ->leftJoin('sites', 'dossiers.id_site', '=', 'sites.id')
-            ->where($dateFilter)
+            ->where($dateNumerisationFilter)
             ->where('dossiers.statut_numerisation', 2)
             ->select(
-                DB::raw("COALESCE(sites.nom_site, 'GLOBAL') as nom_site"),
-                DB::raw('COUNT(*) as total')
-            )
+            DB::raw("COALESCE(sites.nom_site, 'GLOBAL') as nom_site"),
+            DB::raw('COUNT(*) as total')
+        )
             ->groupBy('nom_site')
             ->get();
 

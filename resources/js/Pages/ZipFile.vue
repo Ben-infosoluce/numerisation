@@ -6,11 +6,15 @@
 
         <!-- Fil d'Ariane / Titre du dossier -->
         <div v-if="currentFolder" class="mb-6 flex items-center gap-2 text-gray-600">
-            <button @click="backToFolders" class="hover:text-blue-600 transition flex items-center gap-1">
-                <i class="fa-solid fa-folder-open"></i> Dossiers
+            <button @click="backToFoldersTree" class="hover:text-blue-600 transition flex items-center gap-1">
+                <i class="fa-solid fa-folder-open"></i> Dossiers racines
             </button>
-            <ChevronRight class="w-4 h-4" />
-            <span class="font-semibold text-gray-800">{{ currentFolder }}</span>
+            <template v-for="(part, index) in currentFolder.split('/')" :key="index">
+                <ChevronRight class="w-4 h-4" />
+                <button @click="navigateToBreadcrumb(index)" class="hover:text-blue-600 transition font-semibold" :class="index === currentFolder.split('/').length - 1 ? 'text-gray-800' : 'text-gray-600'">
+                    {{ part }}
+                </button>
+            </template>
         </div>
 
         <div class="mb-4 mt-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
@@ -20,15 +24,18 @@
             </div>
 
             <!-- Actions (uniquement si dans un dossier) -->
-            <div v-if="currentFolder" class="mb-4 flex gap-2">
+            <div v-if="currentFolder" class="mb-4 flex gap-2 flex-wrap">
                 <Button v-if="filteredZips.length > 0" @click="downloadSelected" :disabled="selectedZips.length === 0" class="sm">
-                    <Download class="mr-1" /> Télécharger la sélection
+                    <Download class="mr-1" /> Télécharger sélection
                 </Button>
                 <Button v-if="filteredZips.length > 0" @click="deleteSelected" :disabled="selectedZips.length === 0" class="sm bg-red-600 hover:bg-red-700 text-white">
-                    <Trash2 class="w-4 h-4 mr-1" /> Supprimer la sélection
+                    <Trash2 class="w-4 h-4 mr-1" /> Supprimer sélection
+                </Button>
+                <Button @click="createNewFolder" class="sm bg-green-600 hover:bg-green-700 text-white">
+                    <i class="fa-solid fa-folder-plus mr-1"></i> Créer dossier
                 </Button>
                 <Button @click="showUploadModal = true" class="sm bg-blue-600 hover:bg-blue-700 text-white">
-                    <Upload class="w-4 h-4 mr-1" /> Importer un fichier
+                    <Upload class="w-4 h-4 mr-1" /> Importer
                 </Button>
             </div>
         </div>
@@ -60,9 +67,24 @@
             </div>
         </div>
 
-        <!-- Tableau des fichiers -->
+        <!-- Vue des sous-dossiers et Fichiers -->
         <div v-else>
-            <div v-if="filteredZips.length === 0" class="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+            <!-- Grille des sous-dossiers -->
+            <div v-if="subfoldersList.length > 0" class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+                <div v-for="folder in subfoldersList" :key="folder.name" 
+                    @click="enterSubfolder(folder.name)"
+                    class="group p-4 bg-gray-50 hover:bg-blue-50 border-2 border-gray-100 hover:border-blue-200 rounded-xl cursor-pointer transition-all duration-300 transform hover:-translate-y-1 flex items-center gap-3"
+                >
+                    <div class="bg-blue-100 text-blue-600 w-12 h-12 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                        <i class="fa-solid fa-folder text-xl"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <h3 class="text-sm font-bold text-gray-800 truncate" :title="folder.name">{{ folder.name }}</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="zipFilesList.length === 0" class="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
                 <i class="fa-solid fa-file-circle-xmark text-4xl text-gray-300 mb-3"></i>
                 <p class="text-gray-500">Aucun fichier ZIP disponible dans ce dossier.</p>
             </div>
@@ -81,10 +103,15 @@
                 <TableBody>
                     <TableRow v-for="(zip, index) in paginatedZips" :key="index">
                         <TableCell>
-                            <Checkbox :checked="selectedZips.some(item => item.url === zip.url)"
+                            <Checkbox :checked="selectedZips.some(item => (item.url && item.url === zip.url) || (!item.url && item.name === zip.name))"
                                 @update:checked="(checked) => toggleSelect(zip, checked)" />
                         </TableCell>
-                        <TableCell>{{ zip.name }}</TableCell>
+                        <TableCell>
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-file text-lg text-gray-500"></i>
+                                <span>{{ zip.name }}</span>
+                            </div>
+                        </TableCell>
                         <TableCell>{{ zip.size }}</TableCell>
                         <TableCell>{{ zip.date }}</TableCell>
                         <TableCell class="flex gap-2">
@@ -137,28 +164,30 @@
                 @drop.prevent="onUploadDrop"
             >
                 <Upload class="w-10 h-10 mx-auto mb-3 text-blue-400" />
-                <p class="font-medium text-gray-700">Déposez votre fichier ici</p>
+                <p class="font-medium text-gray-700">Déposez vos fichiers ici</p>
                 <p class="text-sm text-gray-400 mt-1">ou cliquez pour parcourir</p>
                 <p class="text-xs text-gray-400 mt-2">Formats acceptés : ZIP, PDF, XLS, XLSX</p>
-                <input ref="uploadInput" type="file" class="hidden" accept=".zip,.pdf,.xls,.xlsx,application/zip,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" @change="onUploadFileChange" />
+                <input ref="uploadInput" type="file" multiple class="hidden" accept=".zip,.pdf,.xls,.xlsx,application/zip,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" @change="onUploadFileChange" />
             </div>
 
-            <!-- Fichier sélectionné -->
-            <div v-if="uploadFile" class="mt-4 flex items-center justify-between border border-green-400 bg-green-50 rounded-lg px-4 py-2">
-                <div class="flex items-center gap-2 overflow-hidden">
-                    <span class="text-xl">📄</span>
-                    <div class="overflow-hidden">
-                        <p class="text-sm font-medium text-gray-800 truncate">{{ uploadFile.name }}</p>
-                        <p class="text-xs text-gray-500">{{ (uploadFile.size / 1024 / 1024).toFixed(2) }} MB</p>
+            <!-- Fichiers sélectionnés -->
+            <div v-if="uploadFiles.length > 0" class="mt-4 max-h-40 overflow-y-auto">
+                <div v-for="(file, index) in uploadFiles" :key="index" class="flex items-center justify-between border border-green-400 bg-green-50 rounded-lg px-4 py-2 mb-2">
+                    <div class="flex items-center gap-2 overflow-hidden">
+                        <span class="text-xl">📄</span>
+                        <div class="overflow-hidden">
+                            <p class="text-sm font-medium text-gray-800 truncate" :title="file.name">{{ file.name }}</p>
+                            <p class="text-xs text-gray-500">{{ (file.size / 1024 / 1024).toFixed(2) }} MB</p>
+                        </div>
                     </div>
+                    <button @click.stop="removeFile(index)" class="text-red-500 hover:text-red-700 text-lg" title="Retirer">🗑️</button>
                 </div>
-                <button @click="uploadFile = null" class="text-red-500 hover:text-red-700 text-lg" title="Retirer">🗑️</button>
             </div>
 
             <!-- Actions -->
             <div class="mt-6 flex justify-end gap-3">
                 <Button variant="outline" @click="closeUploadModal">Annuler</Button>
-                <Button :disabled="!uploadFile || isUploading" @click="submitUpload" class="bg-blue-600 hover:bg-blue-700 text-white">
+                <Button :disabled="uploadFiles.length === 0 || isUploading" @click="submitUpload" class="bg-blue-600 hover:bg-blue-700 text-white">
                     <span v-if="isUploading">Envoi en cours...</span>
                     <span v-else><Upload class="w-4 h-4 inline mr-1" />Envoyer</span>
                 </Button>
@@ -194,7 +223,7 @@ const allSelected = ref(false);
 
 // Upload
 const showUploadModal = ref(false);
-const uploadFile = ref(null);
+const uploadFiles = ref([]);
 const isDraggingUpload = ref(false);
 const isUploading = ref(false);
 const uploadInput = ref(null);
@@ -202,35 +231,41 @@ const uploadInput = ref(null);
 const triggerUploadInput = () => uploadInput.value?.click();
 
 const onUploadFileChange = (e) => {
-    const f = e.target.files[0];
-    if (f) uploadFile.value = f;
+    const files = Array.from(e.target.files);
+    uploadFiles.value.push(...files);
 };
 
 const onUploadDrop = (e) => {
     isDraggingUpload.value = false;
-    const f = e.dataTransfer.files[0];
-    if (f) uploadFile.value = f;
+    const files = Array.from(e.dataTransfer.files);
+    uploadFiles.value.push(...files);
+};
+
+const removeFile = (index) => {
+    uploadFiles.value.splice(index, 1);
 };
 
 const closeUploadModal = () => {
     showUploadModal.value = false;
-    uploadFile.value = null;
+    uploadFiles.value = [];
     isDraggingUpload.value = false;
     if (uploadInput.value) uploadInput.value.value = '';
 };
 
 const submitUpload = async () => {
-    if (!uploadFile.value) return;
+    if (uploadFiles.value.length === 0) return;
     isUploading.value = true;
     const formData = new FormData();
-    formData.append('file', uploadFile.value);
+    uploadFiles.value.forEach(file => {
+        formData.append('files[]', file);
+    });
     formData.append('folder', currentFolder.value);
 
     try {
-        await axios.post('/archives/zips/upload', formData, {
+        const response = await axios.post('/archives/zips/upload', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
-        toast.success('Fichier importé avec succès !');
+        toast.success(response.data.message || 'Fichiers importés avec succès !');
         closeUploadModal();
         fetchZips();
     } catch (err) {
@@ -371,9 +406,49 @@ const selectFolder = (folderName) => {
     fetchZips();
 };
 
-const backToFolders = () => {
+const enterSubfolder = (subFolderName) => {
+    if (currentFolder.value) {
+        currentFolder.value = currentFolder.value + '/' + subFolderName;
+    } else {
+        currentFolder.value = subFolderName;
+    }
+    fetchZips();
+};
+
+const backToFoldersTree = () => {
     currentFolder.value = null;
     fetchZips();
+};
+
+const navigateToBreadcrumb = (index) => {
+    if (!currentFolder.value) return;
+    const parts = currentFolder.value.split('/');
+    currentFolder.value = parts.slice(0, index + 1).join('/');
+    fetchZips();
+};
+
+const createNewFolder = async () => {
+    const newName = window.prompt("Nom du nouveau dossier :");
+    if (!newName || newName.trim() === '') return;
+    
+    // verifier regex dans le prompt par sécurité (lettres, chiffres, underscore, tiret)
+    if (!/^[a-zA-Z0-9_-]+$/.test(newName.trim())) {
+        toast.error("Le nom du dossier ne doit contenir que des lettres, chiffres, tirets et underscores.");
+        return;
+    }
+
+    try {
+        const response = await axios.post('/archives/zips/folder/create', {
+            new_folder: newName.trim(),
+            parent_folder: currentFolder.value
+        });
+
+        toast.success(response.data.message || 'Dossier créé avec succès');
+        fetchZips();
+    } catch (err) {
+        toast.error(err.response?.data?.message || 'Erreur lors de la création du dossier');
+        console.error(err);
+    }
 };
 
 const applyDateFilter = () => {
@@ -428,14 +503,22 @@ const toggleSelectAll = (checked) => {
     }
 };
 
+const subfoldersList = computed(() => {
+    return filteredZips.value.filter(z => z.is_folder);
+});
+
+const zipFilesList = computed(() => {
+    return filteredZips.value.filter(z => !z.is_folder);
+});
+
 const paginatedZips = computed(() => {
     const start = (currentPage.value - 1) * itemsPerPage;
     const end = start + itemsPerPage;
-    return filteredZips.value.slice(start, end);
+    return zipFilesList.value.slice(start, end);
 });
 
 const totalPages = computed(() => {
-    return Math.ceil(filteredZips.value.length / itemsPerPage);
+    return Math.ceil(zipFilesList.value.length / itemsPerPage);
 });
 
 const nextPage = () => {

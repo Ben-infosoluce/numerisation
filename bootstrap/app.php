@@ -10,6 +10,7 @@ use App\Http\Middleware\Mt1Middleware;
 use App\Http\Middleware\PoolControleMiddleware;
 use App\Http\Middleware\NumerisationMiddleware;
 use App\Http\Middleware\RafMiddleware;
+use App\Http\Middleware\ArchivesMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -44,6 +45,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'Boss' => BossMiddleware::class,
             'CaisseController' => CaisseControllerMiddleware::class,
             'Raf' => RafMiddleware::class,
+            'Archives' => ArchivesMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

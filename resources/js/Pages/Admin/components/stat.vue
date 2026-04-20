@@ -5,14 +5,20 @@
         <div class="flex justify-between items-center">
             <h1 class="text-2xl font-bold">Dashboard</h1>
 
-            <Tabs v-model="periode">
-                <TabsList>
-                    <TabsTrigger value="today">Aujourd'hui</TabsTrigger>
-                    <TabsTrigger value="week">Semaine</TabsTrigger>
-                    <TabsTrigger value="month">Mois</TabsTrigger>
-                    <TabsTrigger value="year">Année</TabsTrigger>
-                </TabsList>
-            </Tabs>
+            <div class="flex items-center gap-4">
+                <DateRangePicker v-model="form.dateRange"
+                            @update:start="val => { form.date_start = val; onFilterChange(); }"
+                            @update:end="val => { form.date_end = val; onFilterChange(); }" />
+
+                <Tabs v-model="periode">
+                    <TabsList>
+                        <TabsTrigger value="today">Aujourd'hui</TabsTrigger>
+                        <TabsTrigger value="week">Semaine</TabsTrigger>
+                        <TabsTrigger value="month">Mois</TabsTrigger>
+                        <TabsTrigger value="year">Année</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+            </div>
         </div>
 
         <!-- KPI CARDS -->
@@ -43,10 +49,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, nextTick } from "vue";
+import { ref, reactive, onMounted, watch, nextTick } from "vue";
 import axios from "axios";
 import * as echarts from "echarts";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import DateRangePicker from "@/components/ui/DateRangePicker.vue";
 
 // 🔹 Refs
 const dossierChart = ref(null);
@@ -61,13 +68,23 @@ const stats = ref({
 
 const dossierData = ref([]);
 
+const form = reactive({
+    dateRange: null,
+    date_start: null,
+    date_end: null
+});
+
 // 🔹 Chart instance
 let chartInstance = null;
 
 // 🔹 FETCH DATA
 const fetchData = async () => {
     try {
-        const res = await axios.get(`/get/admin/global/stats?periode=${periode.value}`);
+        let url = `/get/admin/global/stats?periode=${periode.value}`;
+        if (form.date_start && form.date_end) {
+            url += `&date_start=${form.date_start}&date_end=${form.date_end}`;
+        }
+        const res = await axios.get(url);
 
         // KPI
         stats.value = {
@@ -135,8 +152,19 @@ const initChart = () => {
     });
 };
 
+const onFilterChange = async () => {
+    await fetchData();
+    await nextTick();
+    initChart();
+};
+
 // 🔹 WATCH période
 watch(periode, async () => {
+    if (periode.value) {
+        form.dateRange = null;
+        form.date_start = null;
+        form.date_end = null;
+    }
     await fetchData();
     await nextTick();
     initChart();

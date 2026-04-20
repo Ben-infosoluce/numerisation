@@ -25,7 +25,7 @@ use App\Http\Controllers\RafCaisseController;
 use App\Http\Controllers\RejetController;
 use App\Http\Controllers\CountryController;
 use App\Http\Controllers\PermissionController;
-use App\Http\Controllers\ZipController;
+use App\Http\Controllers\ArchiveController;
 
 //Route groupe des utilisteurs non authentifier
 Route::get('/', [AuthenticateController::class , "showLogin"])->name('login');
@@ -309,14 +309,22 @@ Route::group([
     Route::post('/numerisation/document/update/single', [NumerisationController::class , 'updateSingleField'])->name('numerisation.document.update.single');
     Route::get('/numerisation/documents/dossier/edit/{id_dossier}', [NumerisationController::class , "EditlistDocuments"])->name('numerisation.dossier.edit.documentslist');
     Route::get('numerisation/get/data/modification/{vin}', [NumerisationController::class , "showModificationGetData"])->name('show.modification.numerisation.get.data');
-    Route::get('/archives/zips', [ZipController::class , 'getZips'])->name('zips.get');
-    Route::get('/archives/zips/list', [ZipController::class , 'zipList'])->name('zips.list');
-    Route::get('/archives/zips/download/{name}', [ZipController::class , 'download'])->name('zips.download');
-    Route::post('/archives/zips/bulk-download', [ZipController::class , 'bulkDownload'])->name('zips.bulk-download');
-    Route::post('/archives/zips/rename', [ZipController::class , 'rename'])->name('zips.rename');
-    Route::delete('/archives/zips/delete/{name}', [ZipController::class , 'delete'])->name('zips.delete');
-    Route::delete('/archives/zips/bulk-delete', [ZipController::class , 'bulkDelete'])->name('zips.bulk-delete');
-    Route::post('/archives/zips/upload', [ZipController::class , 'upload'])->name('zips.upload');
+});
+
+//Route des users de Archives
+Route::group([
+    // 'prefix' => 'PoolControle',
+    'middleware' => ['auth', 'Archives']
+], function () {
+    Route::get('/archives/zips', [ArchiveController::class , 'getZips'])->name('zips.get');
+    Route::get('/archives/zips/list', [ArchiveController::class , 'zipList'])->name('zips.list');
+    Route::get('/archives/zips/download/{name}', [ArchiveController::class , 'download'])->name('zips.download');
+    Route::post('/archives/zips/bulk-download', [ArchiveController::class , 'bulkDownload'])->name('zips.bulk-download');
+    Route::post('/archives/zips/rename', [ArchiveController::class , 'rename'])->name('zips.rename');
+    Route::delete('/archives/zips/delete/{name}', [ArchiveController::class , 'delete'])->name('zips.delete');
+    Route::delete('/archives/zips/bulk-delete', [ArchiveController::class , 'bulkDelete'])->name('zips.bulk-delete');
+    Route::post('/archives/zips/upload', [ArchiveController::class , 'upload'])->name('zips.upload');
+    Route::post('/archives/zips/folder/create', [ArchiveController::class , 'createFolder'])->name('zips.folder.create');
 });
 
 

@@ -33,4 +33,5 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/fds/ops', [PdcController::class, 'SaveFdsOps']);
     Route::post('/fds/ops/update', [PdcController::class, 'updateFdsOps']);
+    Route::post('/fds/ops/update/site', [PdcController::class, 'updateFdsOpsSite']);
 });

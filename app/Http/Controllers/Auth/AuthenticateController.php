@@ -33,6 +33,7 @@ class AuthenticateController extends Controller
             'Raf'               => 'raf',
             'Gestionnaire'      => 'gestionnaire/dashboard',
             'CaisseController'  => 'caisse/controller',
+            'Archives'          => 'archives/zips/list',
         ];
 
         // Route par défaut si rôle inconnu
@@ -100,6 +101,8 @@ class AuthenticateController extends Controller
                 return 'show.raf.dashboard';
             case "Gestionnaire":
                 return 'show.gestionnaire.dashboard';
+            case "Archives":
+                return 'zips.list';
             default:
                 return 'home'; // Route par défaut si le rôle n'est pas reconnu
         }

@@ -312,47 +312,132 @@ class PdcController extends Controller
 
     public function updateFdsOps(Request $request)
     {
-        $request->validate([
+        $rules = [
+            'num_chrono' => 'required|string',
             'vin' => 'required|string',
             'num_immatriculation' => 'required|string',
             'date_immatriculation' => 'required|date',
-        ], [
+            'DateNaissance' => 'required|string',
+            'adresse' => 'required|string',
+            'carrosserie' => 'required|string',
+            'couleurVehicule' => 'required|string',
+            'email' => 'nullable|email',
+            'firstname' => 'required|string',
+            'genre' => 'required|string',
+            'lastname' => 'required|string',
+            'marqueVehicule' => 'required|string',
+            'modelVehicule' => 'required|string',
+            'phone' => 'required|string',
+            'sourcesEnergie' => 'required|string',
+            'villeNaissance' => 'required|string',
+            'anneeProduction' => 'required|string',
+            'dateCirculation' => 'required|string',
+        ];
+
+        $messages = [
+            'num_chrono.required' => 'Le numéro de dossier (Chrono) est obligatoire.',
             'vin.required' => 'Le numéro VIN est obligatoire.',
             'num_immatriculation.required' => 'Le numéro d\'immatriculation est obligatoire.',
             'date_immatriculation.required' => 'La date d\'immatriculation est obligatoire.',
             'date_immatriculation.date' => 'La date d\'immatriculation doit être une date valide.',
-        ]);
+            'DateNaissance.required' => 'La date de naissance est obligatoire.',
+            'adresse.required' => 'L\'adresse est obligatoire.',
+            'carrosserie.required' => 'La carrosserie est obligatoire.',
+            'couleurVehicule.required' => 'La couleur du véhicule est obligatoire.',
+            'email.email' => 'L\'adresse email doit être valide.',
+            'firstname.required' => 'Le Nom est obligatoire.',
+            'genre.required' => 'Le genre de véhicule est obligatoire.',
+            'lastname.required' => 'Le Prénom est obligatoire.',
+            'marqueVehicule.required' => 'La marque du véhicule est obligatoire.',
+            'modelVehicule.required' => 'Le modèle du véhicule est obligatoire.',
+            'phone.required' => 'Le numéro de téléphone est obligatoire.',
+            'sourcesEnergie.required' => 'La source d\'énergie est obligatoire.',
+            'villeNaissance.required' => 'La ville de naissance est obligatoire.',
+            'anneeProduction.required' => 'L\'année de production est obligatoire.',
+            'dateCirculation.required' => 'La date de mise en circulation est obligatoire.',
+        ];
+
+        $validated = $request->validate($rules, $messages);
 
         try {
             DB::beginTransaction();
 
-            // 1️⃣ Vérifier si le véhicule existe
-            $vehicule = Vehicule::where('vin', $request->vin)->first();
-            if (!$vehicule) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Véhicule non trouvé'
-                ], 404);
-            }
-
-            // 2️⃣ Mettre à jour le véhicule
-            $vehicule->num_immatriculation = $request->num_immatriculation;
-            $vehicule->date_immatriculation = Carbon::parse($request->date_immatriculation);
-            $vehicule->save();
-
-            // 3️⃣ Récupérer le dossier en cours
-            $dossier = Dossier::where('id_vehicule', $vehicule->id)
-                ->whereIn('statut', [1, 4]) // 1=En attente, 4=En cours
-                ->first();
+            // 1️⃣ Récupérer le dossier par num_chrono
+            $dossier = Dossier::where('num_chrono', $request->num_chrono)->first();
 
             if (!$dossier) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Dossier en cours non trouvé pour ce véhicule'
+                    'message' => 'Dossier non trouvé pour ce numéro chrono'
                 ], 404);
             }
 
-            // 4️⃣ Mettre à jour le dossier
+            // 2️⃣ Récupérer le véhicule et le client associés
+            $vehicule = $dossier->r_dossier_vehicule;
+            if (!$vehicule) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Véhicule associé au dossier non trouvé'
+                ], 404);
+            }
+
+            // Références (find or create)
+            $marque_id = $this->getOrCreateId('marque', 'nom', $request->marqueVehicule);
+            $model_id = $this->getOrCreateId(
+                'model',
+                'nom',
+                $request->modelVehicule,
+                ['marque_id' => $marque_id]
+            );
+
+            // Nombre de plaques
+            $nbPlaque = DB::table('genre')
+                ->where('nom', $request->genre)
+                ->value('nb_plaque');
+
+            // 3️⃣ Mettre à jour le client
+            if ($vehicule->id_client) {
+                $client = Client::find($vehicule->id_client);
+                if ($client) {
+                    $client->update([
+                        'nom' => $request->firstname,
+                        'prenom' => $request->lastname,
+                        'date_naissance' => $request->DateNaissance,
+                        'ville_naissance' => $request->villeNaissance,
+                        'adresse' => $request->adresse,
+                        'telephone' => $request->phone,
+                        'email' => $request->email,
+                    ]);
+                }
+            }
+
+            // 4️⃣ Mettre à jour le véhicule
+            $vehicule->annee_production = $request->anneeProduction;
+            $vehicule->vin = $request->vin;
+            $vehicule->marque = $request->marqueVehicule;
+            $vehicule->modele = $request->modelVehicule;
+            $vehicule->couleur = $request->couleurVehicule;
+            $vehicule->source_energie = $request->sourcesEnergie;
+            $vehicule->genre_vehicule = $request->genre;
+            $vehicule->poids_total_charge = $request->ptac ?? 0;
+            $vehicule->poids_utile = $request->pu ?? 0;
+            $vehicule->poids_vide = $request->pv ?? 0;
+            $vehicule->nb_plaque = $nbPlaque ?? 0;
+            $vehicule->puissance_administrative = $request->puissance;
+            $vehicule->places_assises = intval($request->placesAssises);
+            $vehicule->nombre_essieux = intval($request->nombreEssieux);
+            $vehicule->date_mise_circulation = $request->dateCirculation;
+            $vehicule->cylindree = $request->cylindree;
+            $vehicule->carrosserie = $request->carrosserie;
+            $vehicule->type_technique = $request->typeTechnique;
+            $vehicule->model_id = $model_id;
+            $vehicule->marque_id = $marque_id;
+
+            $vehicule->num_immatriculation = $request->num_immatriculation;
+            $vehicule->date_immatriculation = Carbon::parse($request->date_immatriculation);
+            $vehicule->save();
+
+            // 5️⃣ Mettre à jour le dossier
             $dossier->statut_paiement = 2;
             $dossier->statut = '4'; // Passer le dossier en "En cours"
             $dossier->date_paiement = Carbon::parse($request->date_immatriculation)->format('Y-m-d');
@@ -363,16 +448,16 @@ class PdcController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Numéro d\'immatriculation et date d\'immatriculation mis à jour avec succès.',
+                'message' => 'Dossier et véhicule mis à jour avec succès.',
                 'vehicule' => [
                     'id' => $vehicule->id,
                     'annee_production' => $vehicule->annee_production,
                     'vin' => $vehicule->vin,
-                    'marque' => $vehicule->marque->nom ?? null,
-                    'modele' => $vehicule->modele->nom ?? null,
-                    'couleur' => $vehicule->couleur->nom ?? null,
-                    'source_energie' => $vehicule->sourceEnergie->nom ?? null,
-                    'genre_vehicule' => $vehicule->genreVehicule->nom ?? null,
+                    'marque' => $vehicule->marque,
+                    'modele' => $vehicule->modele,
+                    'couleur' => $vehicule->couleur,
+                    'source_energie' => $vehicule->source_energie,
+                    'genre_vehicule' => $vehicule->genre_vehicule,
                     'num_immatriculation' => $vehicule->num_immatriculation,
                     'date_immatriculation' => $vehicule->date_immatriculation,
                 ],
@@ -385,6 +470,28 @@ class PdcController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+
+    public function updateFdsOpsSite(Request $request)
+    {
+        $dossier = Dossier::where('num_chrono', $request->num_chrono)->first();
+
+        if (!$dossier) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dossier introuvable',
+            ], 404);
+        }
+
+        $dossier->id_site = $request->site_id;
+        $dossier->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Mise à jour du site du dossier réussie.',
+            'data' => $dossier
+        ], 200);
     }
 
 

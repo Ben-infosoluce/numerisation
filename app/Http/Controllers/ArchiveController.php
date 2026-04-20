@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
-class ZipController extends Controller
+class ArchiveController extends Controller
 {
 
     public function zipList()
@@ -35,7 +35,33 @@ class ZipController extends Controller
         }
 
         $files = Storage::disk('public')->files("downloads/$folder");
+        $directories = Storage::disk('public')->directories("downloads/$folder");
         $zipFiles = [];
+
+        // Add subdirectories
+        foreach ($directories as $dir) {
+            $path = Storage::disk('public')->path($dir);
+            if (file_exists($path)) {
+                $time = filemtime($path);
+
+                if ($startDate || $endDate) {
+                    $start = $startDate ? Carbon::parse($startDate)->startOfDay()->timestamp : 0;
+                    $end = $endDate ? Carbon::parse($endDate)->endOfDay()->timestamp : PHP_INT_MAX;
+                    if ($time < $start || $time > $end) {
+                        continue;
+                    }
+                }
+
+                $zipFiles[] = [
+                    'name' => basename($dir),
+                    'url'  => '',
+                    'size' => '-',
+                    'date' => date('d/m/Y H:i', $time),
+                    'timestamp' => $time,
+                    'is_folder' => true
+                ];
+            }
+        }
 
         foreach ($files as $file) {
             $path = Storage::disk('public')->path($file);
@@ -45,7 +71,6 @@ class ZipController extends Controller
 
                 // Filtre par date si les paramètres sont présents
                 if ($startDate || $endDate) {
-                    $fileDate = date('Y-m-d', $time);
                     $start = $startDate ? Carbon::parse($startDate)->startOfDay()->timestamp : 0;
                     $end = $endDate ? Carbon::parse($endDate)->endOfDay()->timestamp : PHP_INT_MAX;
 
@@ -203,37 +228,57 @@ class ZipController extends Controller
         return response()->download($zipPath)->deleteFileAfterSend(true);
     }
 
+    public function createFolder(Request $request)
+    {
+        $request->validate([
+            'new_folder' => 'required|string|regex:/^[a-zA-Z0-9_-]+$/',
+            'parent_folder' => 'required|string',
+        ]);
+
+        $path = 'downloads/' . $request->parent_folder . '/' . $request->new_folder;
+        if (Storage::disk('public')->exists($path)) {
+            return response()->json(['message' => 'Ce dossier existe déjà'], 400);
+        }
+
+        Storage::disk('public')->makeDirectory($path);
+        return response()->json(['message' => 'Dossier créé avec succès']);
+    }
+
     public function upload(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:zip,pdf,xls,xlsx|max:102400',
+            'files' => 'required|array',
+            'files.*' => 'file|mimes:zip,pdf,xls,xlsx|max:102400',
             'folder' => 'required|string',
         ], [
-            'file.required' => 'Aucun fichier sélectionné.',
-            'file.mimes'    => 'Formats acceptés : ZIP, PDF, XLS, XLSX.',
-            'file.max'      => 'Le fichier ne doit pas dépasser 100 Mo.',
+            'files.required' => 'Aucun fichier sélectionné.',
+            'files.*.mimes'    => 'Formats acceptés : ZIP, PDF, XLS, XLSX.',
+            'files.*.max'      => 'Chaque fichier ne doit pas dépasser 100 Mo.',
             'folder.required' => 'Le dossier de destination est requis.',
         ]);
 
-        $uploadedFile = $request->file('file');
-        $filename = $uploadedFile->getClientOriginalName();
         $folder = $request->folder;
-
-        // Éviter d'écraser un fichier existant
         $destinationDir = 'downloads/' . $folder;
+
         if (!Storage::disk('public')->exists($destinationDir)) {
             Storage::disk('public')->makeDirectory($destinationDir);
         }
 
-        $destination = $destinationDir . '/' . $filename;
-        if (Storage::disk('public')->exists($destination)) {
-            $name = pathinfo($filename, PATHINFO_FILENAME);
-            $ext  = pathinfo($filename, PATHINFO_EXTENSION);
-            $filename = $name . '_' . now()->format('YmdHis') . '.' . $ext;
+        $uploadedFiles = [];
+        foreach ($request->file('files') as $uploadedFile) {
+            $filename = $uploadedFile->getClientOriginalName();
+            
+            $destination = $destinationDir . '/' . $filename;
+            if (Storage::disk('public')->exists($destination)) {
+                $name = pathinfo($filename, PATHINFO_FILENAME);
+                $ext  = pathinfo($filename, PATHINFO_EXTENSION);
+                $filename = $name . '_' . now()->format('YmdHis') . '.' . $ext;
+            }
+
+            $uploadedFile->storeAs($destinationDir, $filename, 'public');
+            $uploadedFiles[] = $filename;
         }
 
-        $uploadedFile->storeAs($destinationDir, $filename, 'public');
-
-        return response()->json(['message' => 'Fichier importé avec succès', 'filename' => $filename]);
+        return response()->json(['message' => count($uploadedFiles) . ' fichier(s) importé(s) avec succès', 'filenames' => $uploadedFiles]);
     }
 }

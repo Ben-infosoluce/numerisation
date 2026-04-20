@@ -42,8 +42,7 @@ class NumerisationController extends Controller
             return response()->json([
                 'exists' => $exists,
             ]);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             return response()->json([
                 'error' => $e->getMessage(),
             ], 500);
@@ -73,9 +72,9 @@ class NumerisationController extends Controller
         ])
             ->where('statut_paiement', 2)
             ->where(function ($q) use ($userSiteId) {
-            $q->where('id_site', $userSiteId)
-                ->orWhere('id_site', 0);
-        });
+                $q->where('id_site', $userSiteId)
+                    ->orWhere('id_site', 0);
+            });
         $filtre_per_page = $request->input('filtre_per_page', 1);
         $statut = $request->input('statut_numerisation');
         $filtre_type = $request->input('filtre_type');
@@ -110,9 +109,8 @@ class NumerisationController extends Controller
                 $end = $date_end;
 
                 $query->whereBetween('date_creation', [$start, $end]);
-            }
-            catch (\Exception $e) {
-            // Optionnel : log ou ignorer si erreur de date
+            } catch (\Exception $e) {
+                // Optionnel : log ou ignorer si erreur de date
             }
         }
 
@@ -121,13 +119,13 @@ class NumerisationController extends Controller
         return response()->json([
             'dossiers' => $dossiers,
             'filtres' => $request->only(
-            "filtre_per_page",
-            "statut",
-            "search_data",
-            "filtre_type",
-            "date_start",
-            "date_end"
-        ),
+                "filtre_per_page",
+                "statut",
+                "search_data",
+                "filtre_type",
+                "date_start",
+                "date_end"
+            ),
         ]);
     }
 
@@ -220,8 +218,7 @@ class NumerisationController extends Controller
             return inertia('Numerisation/edit', [
                 'document' => $document,
             ]);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => 'Document introuvable']);
         }
     }
@@ -234,8 +231,7 @@ class NumerisationController extends Controller
                 'status' => 'success',
                 'data' => $document,
             ], 200);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Document introuvable',
@@ -294,8 +290,7 @@ class NumerisationController extends Controller
         if ($log) {
             $old = json_decode($log->old_values, true);
             $new = json_decode($log->new_values, true);
-        }
-        else {
+        } else {
             $old = $new = [];
         }
 
@@ -356,8 +351,7 @@ class NumerisationController extends Controller
         if ($log) {
             $old = json_decode($log->old_values, true);
             $new = json_decode($log->new_values, true);
-        }
-        else {
+        } else {
             $old = $new = [];
         }
 
@@ -418,8 +412,7 @@ class NumerisationController extends Controller
         if ($log) {
             $old = json_decode($log->old_values, true);
             $new = json_decode($log->new_values, true);
-        }
-        else {
+        } else {
             $old = $new = [];
         }
 
@@ -475,11 +468,11 @@ class NumerisationController extends Controller
                 ->where('id', $dossierPrincipal->id_dossier_lier)
                 ->first();
 
-        // 🔴 3. Si dossier lié → redirection vers selectDossier
-        // return inertia('Numerisation/selectDossier', [
-        //     'dossier' => $dossierPrincipal,
-        //     'dossier_lier' => $dossierLier,
-        // ]);
+            // 🔴 3. Si dossier lié → redirection vers selectDossier
+            // return inertia('Numerisation/selectDossier', [
+            //     'dossier' => $dossierPrincipal,
+            //     'dossier_lier' => $dossierLier,
+            // ]);
         }
 
         // 🟢 4. Pas de dossier lié → afficher le formulaire normal
@@ -535,8 +528,7 @@ class NumerisationController extends Controller
         if ($log) {
             $old = json_decode($log->old_values, true);
             $new = json_decode($log->new_values, true);
-        }
-        else {
+        } else {
             $old = $new = [];
         }
 
@@ -584,11 +576,11 @@ class NumerisationController extends Controller
                 ->where('id', $dossierPrincipal->id_dossier_lier)
                 ->first();
 
-        // 🔴 3. Si dossier lié → redirection vers selectDossier
-        // return inertia('Numerisation/selectDossier', [
-        //     'dossier' => $dossierPrincipal,
-        //     'dossier_lier' => $dossierLier,
-        // ]);
+            // 🔴 3. Si dossier lié → redirection vers selectDossier
+            // return inertia('Numerisation/selectDossier', [
+            //     'dossier' => $dossierPrincipal,
+            //     'dossier_lier' => $dossierLier,
+            // ]);
         }
 
         // 🟢 4. Pas de dossier lié → afficher le formulaire normal
@@ -624,8 +616,7 @@ class NumerisationController extends Controller
                     'documents' => $documents
                 ]
             ], 200);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             Log::error("Erreur interne lors de la récupération des documents", [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -699,8 +690,7 @@ class NumerisationController extends Controller
         $existingDocument = Document::where('id_dossier', $validated['id_dossier'])->first();
         if ($existingDocument) {
             $existingDocument->update(array_merge($validated, $paths));
-        }
-        else {
+        } else {
             Document::create(array_merge($validated, $paths, ['id_dossier' => $validated['id_dossier']]));
         }
 
@@ -709,8 +699,7 @@ class NumerisationController extends Controller
             $existingLierDocument = Document::where('id_dossier', $request->dossier_lier_id)->first();
             if ($existingLierDocument) {
                 $existingLierDocument->update(array_merge($validated, $paths));
-            }
-            else {
+            } else {
                 Document::create(array_merge($validated, $paths, ['id_dossier' => $request->dossier_lier_id]));
             }
         }
@@ -735,19 +724,22 @@ class NumerisationController extends Controller
         // Augmenter la limite mémoire pour le traitement PDF
         ini_set('memory_limit', '512M');
         Log::info('--- Début saveOpsNumerisation ID_Dossier: ' . $request->id_dossier . ' ---');
+
         // 🚨 NOUVELLE PROTECTION CONTRE LES ERREURS DE TAILLE D'UPLOAD (NGINX/PHP) 🚨
         if (!$request->hasFile('global_scan')) {
             Log::error("ERREUR UPLOAD: Le fichier 'global_scan' n'est pas présent dans la requête HTTP reçue par PHP.");
             return response()->json([
                 'message' => "Le fichier n'a pas pu être uploadé (peut-être trop lourd pour les limites du serveur Nginx/PHP)."
-            ], 422); // Code d'erreur clair
+            ], 422);
         }
+
         if (!$request->file('global_scan')->isValid()) {
             Log::error("ERREUR UPLOAD INVALID: " . $request->file('global_scan')->getErrorMessage());
             return response()->json([
                 'message' => "Le téléchargement du fichier est invalide ou corrompu: " . $request->file('global_scan')->getErrorMessage()
             ], 422);
         }
+
         // Si le fichier existe et est valide, la validation Laravel ne crashera pas !
         $request->validate([
             'id_dossier' => 'required|exists:dossiers,id',
@@ -758,8 +750,7 @@ class NumerisationController extends Controller
         $file = $request->file('global_scan');
         $tempPath = $file->getRealPath();
 
-        $dossier =
-            Dossier::with([
+        $dossier = Dossier::with([
             'r_dossier_vehicule',
         ])->where('id', $id_dossier)->first();
 
@@ -773,8 +764,8 @@ class NumerisationController extends Controller
             Log::error("Véhicule non trouvé pour le dossier ID: $id_dossier");
             return response()->json(['message' => 'Véhicule non trouvé pour ce dossier'], 404);
         }
-        $vin = $vehicule->vin;
 
+        $vin = $vehicule->vin;
 
         Log::info("Fichier source: " . $file->getClientOriginalName() . " | Taille: " . $file->getSize() . " octets");
 
@@ -803,7 +794,6 @@ class NumerisationController extends Controller
             1 => 'AGBAN',
         ];
         $folder = $folderMapping[$id_site] ?? 'OTHERS';
-        // dd($folder, $id_site);
 
         $paths = [];
         $zipDirectory = 'downloads/' . $folder;
@@ -823,6 +813,9 @@ class NumerisationController extends Controller
         if ($zipOpened !== TRUE) {
             Log::error("Erreur ZipArchive : Impossible d'ouvrir le fichier à " . $zipFilePath);
         }
+
+        // Variable pour stocker le chemin FTP final
+        $ftpPathForDb = null;
 
         try {
             $pdf = new Fpdi();
@@ -869,31 +862,80 @@ class NumerisationController extends Controller
             if ($zipOpened === TRUE) {
                 $zip->close();
                 Log::info("Fichier ZIP fermé avec succès.");
+
+                // ========== UPLOAD FTP AVEC STRUCTURE DE DOSSIERS ==========
+                try {
+                    $zipContent = file_get_contents($zipFilePath);
+                    $ftpDisk = Storage::disk('ftp_scandfs');
+
+                    // Format de date : 19042026
+                    $dateFolder = now()->format('dmY');
+
+                    // Construction des chemins
+                    $basePath = $folder; // BAE, AKOUEDO ou AGBAN
+                    $carteGrisePath = $basePath . '/CARTE GRISE EDITEE';
+                    $docFormalitePath = $basePath . '/DOCUMENT DE FORMALITE';
+                    $datePath = $docFormalitePath . '/' . $dateFolder;
+                    $ftpFilePath = $datePath . '/' . $zipFileName;
+
+                    // Création des dossiers permanents (une seule fois)
+                    if (!$ftpDisk->exists($carteGrisePath)) {
+                        $ftpDisk->makeDirectory($carteGrisePath);
+                        Log::info("Création dossier FTP: $carteGrisePath");
+                    }
+
+                    if (!$ftpDisk->exists($docFormalitePath)) {
+                        $ftpDisk->makeDirectory($docFormalitePath);
+                        Log::info("Création dossier FTP: $docFormalitePath");
+                    }
+
+                    // Création du dossier daté (à chaque upload s'il n'existe pas)
+                    if (!$ftpDisk->exists($datePath)) {
+                        $ftpDisk->makeDirectory($datePath);
+                        Log::info("Création dossier FTP daté: $datePath");
+                    }
+
+                    // Upload du fichier ZIP
+                    $ftpDisk->put($ftpFilePath, $zipContent);
+                    Log::info("Fichier ZIP uploadé sur FTP: $ftpFilePath");
+
+                    // Stockage du chemin pour la base de données
+                    $ftpPathForDb = 'ftp://' . $ftpFilePath;
+
+                    // Suppression du fichier local
+                    unlink($zipFilePath);
+                    Log::info("Fichier ZIP local supprimé.");
+                } catch (\Exception $ftpError) {
+                    Log::error("Erreur lors de l'upload FTP : " . $ftpError->getMessage());
+                    // Fallback sur l'ancien chemin si l'upload échoue
+                    $ftpPathForDb = 'ftp://' . $folder . '/' . $zipFileName;
+                }
+                // ========== FIN UPLOAD FTP ==========
             }
 
             // Mise à jour base de données
             $dataToSave = array_merge($paths, [
                 'id_dossier' => $id_dossier,
-                'chemin_zip' => $zipDirectory . '/' . $zipFileName
+                'chemin_zip' => $ftpPathForDb ?? 'ftp://' . $folder . '/' . $zipFileName
             ]);
 
             Document::updateOrCreate(['id_dossier' => $id_dossier], $dataToSave);
             Dossier::where('id', $id_dossier)->update([
                 'statut_numerisation' => 2,
                 'id_site' => getIdSite(),
+                'date_numerisation' => now(),
             ]);
 
             Log::info("Opération terminée avec succès pour le dossier : $id_dossier");
             $this->extractAndSaveEmuci($id_dossier, $tempPath, $dossier->r_dossier_vehicule->vin, $dossier->num_chrono);
             $this->sendDocumentDataRequest($id_dossier);
+
             return response()->json(['message' => 'Traitement réussi !']);
-        }
-        catch (\Throwable $e) {
+        } catch (\Throwable $e) {
             Log::error("CRITIQUE - Erreur traitement PDF : " . $e->getMessage());
             Log::error("Trace : " . $e->getTraceAsString());
             return response()->json(['message' => 'Erreur technique: ' . $e->getMessage()], 500);
-        }
-        finally {
+        } finally {
             // Nettoyage du fichier normalisé temporaire
             if (isset($normalizedPath) && $normalizedPath && file_exists($normalizedPath)) {
                 unlink($normalizedPath);
@@ -904,20 +946,18 @@ class NumerisationController extends Controller
     //save immatriculation speciale numerisation via api
     public function saveOpsNumerisationApi(Request $request)
     {
-
         $request->validate([
             'id_dossier' => 'required|integer|exists:dossiers,id',
             'global_scan' => 'required|file|mimes:pdf',
         ]);
 
-
         $id_dossier = $request->id_dossier;
         $file = $request->file('global_scan');
         $tempPath = $file->getRealPath();
-        $dossier =
-            Dossier::with([
-            'r_dossier_vehicule',
-        ])->where('id', $id_dossier)->first();
+
+        $dossier = Dossier::with(['r_dossier_vehicule'])
+            ->where('id', $id_dossier)
+            ->first();
 
         if (!$dossier) {
             return response()->json(['message' => 'Dossier non trouvé'], 404);
@@ -927,26 +967,25 @@ class NumerisationController extends Controller
         if (!$vehicule) {
             return response()->json(['message' => 'Véhicule non trouvé pour ce dossier'], 404);
         }
+
         $vin = $vehicule->vin;
-
-
 
         // Configuration (16 pages pour 14 fichiers)
         $fieldsConfig = [
-            ['field' => 'fiche_rti', 'filename' => 'rti', 'pages' => 1], // Page 1
-            ['field' => 'fiche_civio', 'filename' => 'civio', 'pages' => 2], // Pages 2, 3
-            ['field' => 'visite_technique', 'filename' => 'vtp', 'pages' => 1], // Page 4
-            ['field' => 'formulaire_recensement', 'filename' => 'fr', 'pages' => 1], // Page 5
-            ['field' => 'cni', 'filename' => 'pip', 'pages' => 1], // Page 6
-            ['field' => 'carte_professionnelle', 'filename' => 'cp', 'pages' => 1], // Page 7
-            ['field' => 'permis_conduire', 'filename' => 'pc', 'pages' => 1], // Page 8
-            ['field' => 'd3', 'filename' => 'd3', 'pages' => 2], // Pages 9, 10
-            ['field' => 'assurance', 'filename' => 'Ass', 'pages' => 1], // Page 11
-            ['field' => 'fiche_demande_carte_grise', 'filename' => 'dcg', 'pages' => 1], // Page 12
-            ['field' => 'recepisse_depot', 'filename' => 'rdd', 'pages' => 1], // Page 13
-            ['field' => 'recu_dgttc', 'filename' => 'rdgttc', 'pages' => 1], // Page 14
-            ['field' => 'recu_emuci', 'filename' => 'remuci', 'pages' => 1], // Page 15
-            ['field' => 'recu_quipux', 'filename' => 'rquipux', 'pages' => 1], // Page 16
+            ['field' => 'fiche_rti', 'filename' => 'rti', 'pages' => 1],
+            ['field' => 'fiche_civio', 'filename' => 'civio', 'pages' => 2],
+            ['field' => 'visite_technique', 'filename' => 'vtp', 'pages' => 1],
+            ['field' => 'formulaire_recensement', 'filename' => 'fr', 'pages' => 1],
+            ['field' => 'cni', 'filename' => 'pip', 'pages' => 1],
+            ['field' => 'carte_professionnelle', 'filename' => 'cp', 'pages' => 1],
+            ['field' => 'permis_conduire', 'filename' => 'pc', 'pages' => 1],
+            ['field' => 'd3', 'filename' => 'd3', 'pages' => 2],
+            ['field' => 'assurance', 'filename' => 'Ass', 'pages' => 1],
+            ['field' => 'fiche_demande_carte_grise', 'filename' => 'dcg', 'pages' => 1],
+            ['field' => 'recepisse_depot', 'filename' => 'rdd', 'pages' => 1],
+            ['field' => 'recu_dgttc', 'filename' => 'rdgttc', 'pages' => 1],
+            ['field' => 'recu_emuci', 'filename' => 'remuci', 'pages' => 1],
+            ['field' => 'recu_quipux', 'filename' => 'rquipux', 'pages' => 1],
         ];
 
         $id_site = getIdSite();
@@ -959,47 +998,46 @@ class NumerisationController extends Controller
 
         $paths = [];
         $zipDirectory = 'downloads/' . $folder;
+
         if (!Storage::disk('public')->exists($zipDirectory)) {
             Storage::disk('public')->makeDirectory($zipDirectory);
         }
-
 
         $zipFileName = $vin . '.zip';
         $zipFilePath = Storage::disk('public')->path($zipDirectory . '/' . $zipFileName);
         $zip = new \ZipArchive();
         $zipOpened = $zip->open($zipFilePath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
 
-
         try {
             $pdf = new Fpdi();
             $pageCount = $pdf->setSourceFile($tempPath);
-
             $currentPage = 1;
+
             foreach ($fieldsConfig as $config) {
-                if ($currentPage > $pageCount)
+                if ($currentPage > $pageCount) {
                     break;
+                }
 
                 $field = $config['field'];
                 $pagesToExtract = $config['pages'];
                 $filenameAlias = $config['filename'];
-
                 $newPdf = new Fpdi();
 
                 for ($i = 0; $i < $pagesToExtract; $i++) {
-                    if ($currentPage > $pageCount)
+                    if ($currentPage > $pageCount) {
                         break;
+                    }
 
                     $newPdf->setSourceFile($tempPath);
                     $template = $newPdf->importPage($currentPage);
                     $size = $newPdf->getTemplateSize($template);
                     $newPdf->addPage($size['orientation'], [$size['width'], $size['height']]);
                     $newPdf->useTemplate($template);
-
                     $currentPage++;
                 }
 
                 $fileName = 'numerisations/' . $vin . '/' . $filenameAlias . '.pdf';
-                $output = $newPdf->Output('S'); // Output as string
+                $output = $newPdf->Output('S');
                 Storage::disk('public')->put($fileName, $output);
                 $paths[$field] = $fileName;
 
@@ -1010,38 +1048,80 @@ class NumerisationController extends Controller
 
             if ($zipOpened === TRUE) {
                 $zip->close();
+
+                // ========== DÉBUT MODIFICATION FTP ==========
+                try {
+                    $zipContent = file_get_contents($zipFilePath);
+                    $ftpDisk = Storage::disk('ftp_scandfs');
+
+                    // Format de date : 13042026
+                    $dateFolder = now()->format('dmY');
+
+                    // Construction des chemins
+                    $basePath = $folder; // BAE, AKOUEDO ou AGBAN
+                    $carteGrisePath = $basePath . '/CARTE GRISE EDITEE';
+                    $docFormalitePath = $basePath . '/DOCUMENT DE FORMALITE';
+                    $datePath = $docFormalitePath . '/' . $dateFolder;
+                    $ftpFilePath = $datePath . '/' . $zipFileName;
+
+                    // Création des dossiers permanents (une seule fois)
+                    if (!$ftpDisk->exists($carteGrisePath)) {
+                        $ftpDisk->makeDirectory($carteGrisePath);
+                    }
+
+                    if (!$ftpDisk->exists($docFormalitePath)) {
+                        $ftpDisk->makeDirectory($docFormalitePath);
+                    }
+
+                    // Création du dossier daté (à chaque upload s'il n'existe pas)
+                    if (!$ftpDisk->exists($datePath)) {
+                        $ftpDisk->makeDirectory($datePath);
+                    }
+
+                    // Upload du fichier ZIP
+                    $ftpDisk->put($ftpFilePath, $zipContent);
+                    Log::info("API - Fichier ZIP uploadé sur FTP: $ftpFilePath");
+
+                    // Suppression du fichier local
+                    unlink($zipFilePath);
+
+                    // Mise à jour du chemin stocké en base
+                    $ftpPathForDb = 'ftp://' . $ftpFilePath;
+                } catch (\Exception $ftpError) {
+                    Log::error("API - Erreur lors de l'upload FTP : " . $ftpError->getMessage());
+                    $ftpPathForDb = null;
+                }
+                // ========== FIN MODIFICATION FTP ==========
             }
 
             // Sauvegarde en base
             $existingDocument = Document::where('id_dossier', $id_dossier)->first();
             $dataToSave = array_merge($paths, [
                 'id_dossier' => $id_dossier,
-                'chemin_zip' => $zipDirectory . '/' . $zipFileName
+                'chemin_zip' => $ftpPathForDb ?? 'ftp://' . $folder . '/' . $zipFileName
             ]);
 
             if ($existingDocument) {
                 $existingDocument->update($dataToSave);
-            }
-            else {
+            } else {
                 Document::create($dataToSave);
             }
 
             // Mettre à jour le statut du dossier
             $dossier = Dossier::findOrFail($id_dossier);
             $dossier->statut_numerisation = 2;
+            $dossier->date_numerisation = now();
             $dossier->id_site = getIdSite();
             $dossier->save();
 
             $this->extractAndSaveEmuci($id_dossier, $tempPath, $vehicule->vin, $dossier->num_chrono);
             $this->sendDocumentDataRequest($id_dossier);
+
             return response()->json(['message' => 'Numérisation traitée et scindée (16 pages) avec succès !']);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             Log::error("Erreur lors du découpage PDF (16 pages) : " . $e->getMessage());
             return response()->json(['message' => 'Erreur lors du traitement du fichier PDF - ' . $e->getMessage()], 500);
-        }
-        finally {
-            // Nettoyage du fichier normalisé temporaire
+        } finally {
             if (isset($normalizedPath) && $normalizedPath && file_exists($normalizedPath)) {
                 unlink($normalizedPath);
             }
@@ -1078,8 +1158,7 @@ class NumerisationController extends Controller
                 $rules['piece_ancien_proprietaire'] = 'required|file|mimes:jpg,jpeg,png';
                 $messages['type_piece_ancien_proprietaire.required'] = 'Le type de pièce de l\'ancien propriétaire est obligatoire.';
                 $messages['piece_ancien_proprietaire.required'] = 'La pièce de l\'ancien propriétaire est obligatoire.';
-            }
-            else {
+            } else {
                 $rules['registre_de_commerce'] = 'required|file|mimes:jpg,jpeg,png';
                 $rules['dfe'] = 'required|file|mimes:jpg,jpeg,png';
                 $messages['registre_de_commerce.required'] = 'Le registre de commerce de l\'ancien propriétaire est obligatoire.';
@@ -1092,8 +1171,7 @@ class NumerisationController extends Controller
                 $rules['piece'] = 'required|file|mimes:jpg,jpeg,png';
                 $messages['type_piece_nouveau_proprietaire.required'] = 'Le type de pièce du nouveau propriétaire est obligatoire.';
                 $messages['piece.required'] = 'La pièce du nouveau propriétaire est obligatoire.';
-            }
-            else {
+            } else {
                 $rules['registre_de_commerce_nouvelle_entreprise'] = 'required|file|mimes:jpg,jpeg,png';
                 $rules['dfe_nouvelle_entreprise'] = 'required|file|mimes:jpg,jpeg,png';
                 $messages['registre_de_commerce_nouvelle_entreprise.required'] = 'Le registre de commerce du nouveau propriétaire est obligatoire.';
@@ -1133,8 +1211,7 @@ class NumerisationController extends Controller
                 }
             }
             $existingDocument->update(array_merge($validated, $paths));
-        }
-        else {
+        } else {
             // Créer un nouveau document avec tous les fichiers
             foreach ($fileFields as $field) {
                 if ($request->hasFile($field)) {
@@ -1172,15 +1249,14 @@ class NumerisationController extends Controller
             }
 
             // Mise à jour du champ spécifique
-            $doc->{ $request->field} = $path;
+            $doc->{$request->field} = $path;
             $doc->save();
 
             return response()->json([
                 'success' => true,
                 'path' => $path
             ]);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur serveur: ' . $e->getMessage()
@@ -1189,7 +1265,6 @@ class NumerisationController extends Controller
     }
 
     // modifier document de l'anumerisation
-
     public function updateDocument(Request $request, $id)
     {
         try {
@@ -1220,7 +1295,7 @@ class NumerisationController extends Controller
                     return $request->file($fieldName)->store("documents", $disk);
                 }
 
-                return $document->{ $fieldName} ?? null;
+                return $document->{$fieldName} ?? null;
             };
 
             // Mise à jour conditionnelle : uniquement si le champ est présent
@@ -1272,14 +1347,12 @@ class NumerisationController extends Controller
                 'message' => 'Document mis à jour.',
                 'data' => $documentData,
             ], 200);
-        }
-        catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'status' => 'not_found',
                 'message' => 'Document introuvable.'
             ], 404);
-        }
-        catch (\Throwable $e) {
+        } catch (\Throwable $e) {
             Log::error("Erreur interne lors de la mise à jour", [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTrace()
@@ -1312,7 +1385,7 @@ class NumerisationController extends Controller
             $document = Document::findOrFail($documentId);
 
             // Mettre à jour le champ avec l'URL Cloudinary
-            $document->{ $fieldName} = $fileUrl;
+            $document->{$fieldName} = $fileUrl;
 
             // Sauvegarder les modifications
             $document->save();
@@ -1324,15 +1397,13 @@ class NumerisationController extends Controller
                 'url' => $fileUrl,
                 'field' => $fieldName
             ]);
-        }
-        catch (ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             // Si le document n'existe pas
             return response()->json([
                 'status' => 'error',
                 'message' => 'Document non trouvé.'
             ], 404);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             // Erreur générale
             return response()->json([
                 'status' => 'error',
@@ -1408,8 +1479,7 @@ class NumerisationController extends Controller
 
             EmuciDocument::updateOrCreate(['id_dossier' => $id_dossier], $paths);
             return true;
-        }
-        catch (\Throwable $e) {
+        } catch (\Throwable $e) {
             Log::error("Erreur extraction EMUCI pour dossier $id_dossier : " . $e->getMessage());
             return false;
         }
@@ -1483,8 +1553,7 @@ class NumerisationController extends Controller
             $result = sendDocumentData($numChronoCil, $numeroChassisVehicule, $numImmat, $listeDocuments);
             Log::info("Réponse de sendDocumentData pour dossier $id_dossier", ['result' => $result]);
             return response()->json($result);
-        }
-        catch (\Throwable $e) {
+        } catch (\Throwable $e) {
             Log::error("Erreur lors de l'envoi des documents pour dossier $id_dossier : " . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
         }
