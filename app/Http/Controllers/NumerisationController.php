@@ -18,13 +18,20 @@ use Illuminate\Support\Str;
 use Intervention\Image\ImageManager;
 use setasign\Fpdi\Fpdi;
 use App\Helpers\apiHelpers;
+use App\Services\FtpUploadService;
 
 
 // ✅ Pour les règles de validation
 
 class NumerisationController extends Controller
 {
-    //
+    protected FtpUploadService $ftpService;
+
+    public function __construct(FtpUploadService $ftpService)
+    {
+        $this->ftpService = $ftpService;
+    }
+
     //dashbord
     public function showNumerisationDashboard()
     {
@@ -863,54 +870,8 @@ class NumerisationController extends Controller
                 $zip->close();
                 Log::info("Fichier ZIP fermé avec succès.");
 
-                // ========== UPLOAD FTP AVEC STRUCTURE DE DOSSIERS ==========
-                try {
-                    $zipContent = file_get_contents($zipFilePath);
-                    $ftpDisk = Storage::disk('ftp_scandfs');
-
-                    // Format de date : 19042026
-                    $dateFolder = now()->format('dmY');
-
-                    // Construction des chemins
-                    $basePath = $folder; // BAE, AKOUEDO ou AGBAN
-                    $carteGrisePath = $basePath . '/CARTE GRISE EDITEE';
-                    $docFormalitePath = $basePath . '/DOCUMENT DE FORMALITE';
-                    $datePath = $docFormalitePath . '/' . $dateFolder;
-                    $ftpFilePath = $datePath . '/' . $zipFileName;
-
-                    // Création des dossiers permanents (une seule fois)
-                    if (!$ftpDisk->exists($carteGrisePath)) {
-                        $ftpDisk->makeDirectory($carteGrisePath);
-                        Log::info("Création dossier FTP: $carteGrisePath");
-                    }
-
-                    if (!$ftpDisk->exists($docFormalitePath)) {
-                        $ftpDisk->makeDirectory($docFormalitePath);
-                        Log::info("Création dossier FTP: $docFormalitePath");
-                    }
-
-                    // Création du dossier daté (à chaque upload s'il n'existe pas)
-                    if (!$ftpDisk->exists($datePath)) {
-                        $ftpDisk->makeDirectory($datePath);
-                        Log::info("Création dossier FTP daté: $datePath");
-                    }
-
-                    // Upload du fichier ZIP
-                    $ftpDisk->put($ftpFilePath, $zipContent);
-                    Log::info("Fichier ZIP uploadé sur FTP: $ftpFilePath");
-
-                    // Stockage du chemin pour la base de données
-                    $ftpPathForDb = 'ftp://' . $ftpFilePath;
-
-                    // Suppression du fichier local
-                    unlink($zipFilePath);
-                    Log::info("Fichier ZIP local supprimé.");
-                } catch (\Exception $ftpError) {
-                    Log::error("Erreur lors de l'upload FTP : " . $ftpError->getMessage());
-                    // Fallback sur l'ancien chemin si l'upload échoue
-                    $ftpPathForDb = 'ftp://' . $folder . '/' . $zipFileName;
-                }
-                // ========== FIN UPLOAD FTP ==========
+                // Upload FTP via service
+                $ftpPathForDb = $this->ftpService->uploadZipToFtp($zipFilePath, $folder, $zipFileName);
             }
 
             // Mise à jour base de données
@@ -946,6 +907,18 @@ class NumerisationController extends Controller
     //save immatriculation speciale numerisation via api
     public function saveOpsNumerisationApi(Request $request)
     {
+        // Augmenter la limite mémoire pour le traitement PDF
+        ini_set('memory_limit', '512M');
+
+        // Protection contre les erreurs de taille d'upload
+        if (!$request->hasFile('global_scan')) {
+            return response()->json(['message' => "Le fichier 'global_scan' est manquant."], 422);
+        }
+
+        if (!$request->file('global_scan')->isValid()) {
+            return response()->json(['message' => "Le fichier est invalide : " . $request->file('global_scan')->getErrorMessage()], 422);
+        }
+
         $request->validate([
             'id_dossier' => 'required|integer|exists:dossiers,id',
             'global_scan' => 'required|file|mimes:pdf',
@@ -1049,49 +1022,8 @@ class NumerisationController extends Controller
             if ($zipOpened === TRUE) {
                 $zip->close();
 
-                // ========== DÉBUT MODIFICATION FTP ==========
-                try {
-                    $zipContent = file_get_contents($zipFilePath);
-                    $ftpDisk = Storage::disk('ftp_scandfs');
-
-                    // Format de date : 13042026
-                    $dateFolder = now()->format('dmY');
-
-                    // Construction des chemins
-                    $basePath = $folder; // BAE, AKOUEDO ou AGBAN
-                    $carteGrisePath = $basePath . '/CARTE GRISE EDITEE';
-                    $docFormalitePath = $basePath . '/DOCUMENT DE FORMALITE';
-                    $datePath = $docFormalitePath . '/' . $dateFolder;
-                    $ftpFilePath = $datePath . '/' . $zipFileName;
-
-                    // Création des dossiers permanents (une seule fois)
-                    if (!$ftpDisk->exists($carteGrisePath)) {
-                        $ftpDisk->makeDirectory($carteGrisePath);
-                    }
-
-                    if (!$ftpDisk->exists($docFormalitePath)) {
-                        $ftpDisk->makeDirectory($docFormalitePath);
-                    }
-
-                    // Création du dossier daté (à chaque upload s'il n'existe pas)
-                    if (!$ftpDisk->exists($datePath)) {
-                        $ftpDisk->makeDirectory($datePath);
-                    }
-
-                    // Upload du fichier ZIP
-                    $ftpDisk->put($ftpFilePath, $zipContent);
-                    Log::info("API - Fichier ZIP uploadé sur FTP: $ftpFilePath");
-
-                    // Suppression du fichier local
-                    unlink($zipFilePath);
-
-                    // Mise à jour du chemin stocké en base
-                    $ftpPathForDb = 'ftp://' . $ftpFilePath;
-                } catch (\Exception $ftpError) {
-                    Log::error("API - Erreur lors de l'upload FTP : " . $ftpError->getMessage());
-                    $ftpPathForDb = null;
-                }
-                // ========== FIN MODIFICATION FTP ==========
+                // Upload FTP via service
+                $ftpPathForDb = $this->ftpService->uploadZipToFtp($zipFilePath, $folder, $zipFileName);
             }
 
             // Sauvegarde en base
@@ -1514,37 +1446,37 @@ class NumerisationController extends Controller
                 [
                     "Code_document" => "rti",
                     "Libelle_document" => "réception à titre isolé",
-                    "Url_document" => $emuciDocument->rti ? 'https://placenett.net/storage/' . $emuciDocument->rti : ''
+                    "Url_document" => $emuciDocument->rti ? url('storage') . '/' . $emuciDocument->rti : ''
                 ],
                 [
                     "Code_document" => "rcil",
                     "Libelle_document" => "reçu CIL",
-                    "Url_document" => $emuciDocument->rcil ? 'https://placenett.net/storage/' . $emuciDocument->rcil : ''
+                    "Url_document" => $emuciDocument->rcil ? url('storage') . '/' . $emuciDocument->rcil : ''
                 ],
                 [
                     "Code_document" => "pir",
                     "Libelle_document" => "Pièce d'identité recto ; Pièce d'identité recto du gérant",
-                    "Url_document" => $emuciDocument->pir ? 'https://placenett.net/storage/' . $emuciDocument->pir : ''
+                    "Url_document" => $emuciDocument->pir ? url('storage') . '/' . $emuciDocument->pir : ''
                 ],
                 [
                     "Code_document" => "dcg",
                     "Libelle_document" => "demande de carte grise",
-                    "Url_document" => $emuciDocument->dcg ? 'https://placenett.net/storage/' . $emuciDocument->dcg : ''
+                    "Url_document" => $emuciDocument->dcg ? url('storage') . '/' . $emuciDocument->dcg : ''
                 ],
                 [
                     "Code_document" => "d3",
                     "Libelle_document" => "déclaration D3",
-                    "Url_document" => $emuciDocument->d3 ? 'https://placenett.net/storage/' . $emuciDocument->d3 : ''
+                    "Url_document" => $emuciDocument->d3 ? url('storage') . '/' . $emuciDocument->d3 : ''
                 ],
                 [
                     "Code_document" => "cvt",
                     "Libelle_document" => "contrôle visite technique",
-                    "Url_document" => $emuciDocument->cvt ? 'https://placenett.net/storage/' . $emuciDocument->cvt : ''
+                    "Url_document" => $emuciDocument->cvt ? url('storage') . '/' . $emuciDocument->cvt : ''
                 ],
                 [
                     "Code_document" => "cmc",
                     "Libelle_document" => "certificat de mise à la consommation",
-                    "Url_document" => $emuciDocument->cmc ? 'https://placenett.net/storage/' . $emuciDocument->cmc : ''
+                    "Url_document" => $emuciDocument->cmc ? url('storage') . '/' . $emuciDocument->cmc : ''
                 ],
             ]
         ];

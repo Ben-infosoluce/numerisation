@@ -58,14 +58,13 @@ return [
 
         'ftp_scandfs' => [
             'driver' => 'ftp',
-            'host' => '57.129.140.98',
-            'username' => 'scandfs',
-            'password' => 'dnZtu2EWtGzQgy5amBFYl0Hf2',
-            'port' => 21,
-            // 'root' => '/',
-            // 'passive' => true,
-            // 'ssl' => true,
-            // 'timeout' => 30,
+            'host' => env('FTP_SCANDFS_HOST', '57.129.140.98'),
+            'username' => env('FTP_SCANDFS_USERNAME', 'scanftp'),
+            'password' => env('FTP_SCANDFS_PASSWORD', '8qyAK75uLGN6T4y7'),
+            'port' => (int) env('FTP_SCANDFS_PORT', 21),
+            'passive' => true,
+            'ignorePassiveAddress' => true,
+            'timeout' => 30,
         ],
 
     ],
