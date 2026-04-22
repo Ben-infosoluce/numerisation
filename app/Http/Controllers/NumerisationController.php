@@ -828,6 +828,12 @@ class NumerisationController extends Controller
             $pageCount = $pdf->setSourceFile($tempPath);
             Log::info("Nombre de pages total dans le PDF : " . $pageCount);
 
+            if ($pageCount !== 16) {
+                return response()->json([
+                    'message' => "Le document contient $pageCount pages au lieu des 16 attendues. Veuillez vérifier les documents (16 pages requises) et rescanner."
+                ], 422);
+            }
+
             $currentPage = 1;
             foreach ($fieldsConfig as $config) {
                 if ($currentPage > $pageCount)
@@ -983,6 +989,13 @@ class NumerisationController extends Controller
         try {
             $pdf = new Fpdi();
             $pageCount = $pdf->setSourceFile($tempPath);
+
+            if ($pageCount !== 16) {
+                return response()->json([
+                    'message' => "Le document contient $pageCount pages au lieu des 16 attendues. Veuillez vérifier les documents (16 pages requises) et rescanner."
+                ], 422);
+            }
+
             $currentPage = 1;
 
             foreach ($fieldsConfig as $config) {

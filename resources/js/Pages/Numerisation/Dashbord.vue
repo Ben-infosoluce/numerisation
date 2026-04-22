@@ -4,7 +4,7 @@
         <div class="flex flex-col space-y-4 mx-8 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
             <!-- Titre -->
             <h4 class="text-2xl font-bold tracking-tight">
-                Dossiers Numerisationss
+                Dossiers Numerisations
             </h4>
             <!-- Bouton Nouveau -->
             <!-- <div class="flex items-center space-x-2">
