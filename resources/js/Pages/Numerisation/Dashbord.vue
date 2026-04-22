@@ -4,7 +4,7 @@
         <div class="flex flex-col space-y-4 mx-8 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
             <!-- Titre -->
             <h4 class="text-2xl font-bold tracking-tight">
-                Dossiers Numerisations
+                Dossiers Numerisationss
             </h4>
             <!-- Bouton Nouveau -->
             <!-- <div class="flex items-center space-x-2">
@@ -25,8 +25,7 @@
                             <!-- Recherche -->
                             <Input_search v-model="form.search_data" @update:modelValue="onFilterChange"
                                 placeholder="Rechercher par VIN..." class="w-full " />
-                            <!-- Statut -->
-                            <!-- <Select v-model="form.statut" @update:modelValue="onFilterChange">
+                            <Select v-model="form.statut_numerisation" @update:modelValue="onFilterChange">
                                 <SelectTrigger class="w-40">
                                     <SelectValue placeholder="Statut" />
                                 </SelectTrigger>
@@ -35,11 +34,11 @@
                                         <SelectLabel>Statut</SelectLabel>
                                         <SelectItem value="0">Tous</SelectItem>
                                         <SelectItem value="1">En attente</SelectItem>
-                                        <SelectItem value="2">Validé</SelectItem>
-                                        <SelectItem value="3">Refusé</SelectItem>
+                                        <SelectItem value="2">Numérisé</SelectItem>
+                                        <SelectItem value="3">Annulé</SelectItem>
                                     </SelectGroup>
                                 </SelectContent>
-                            </Select> -->
+                            </Select>
 
                             <!-- Dates -->
                             <!-- <DateRangePicker /> -->
@@ -161,13 +160,13 @@
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent>
                                                     <Link v-if="dossier?.statut_numerisation !== 1"
-                                                        :href="route('numerisation.dossier.documentslist', dossier.id)">
+                                                        :href="route('numerisation.dossier.documentslist', dossier.id) + queryString">
                                                     <DropdownMenuItem>
                                                         <Eye class=" w-4 h-4 " />Détails
                                                     </DropdownMenuItem>
                                                     </Link>
                                                     <Link v-if="dossier?.statut_numerisation === 1"
-                                                        :href="route('show.new.numerisation.get.data', dossier?.num_chrono)">
+                                                        :href="route('show.new.numerisation.get.data', dossier?.num_chrono) + queryString">
                                                     <DropdownMenuItem>
                                                         <Eye class=" w-4 h-4 " />Numériser
                                                     </DropdownMenuItem>
@@ -209,6 +208,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 
 const loading = ref(false)
+const queryString = ref('')
 // Pagination
 const dossiers = ref([])
 const meta = ref(null)
@@ -219,20 +219,23 @@ const perPage = ref(10)
 const params = new URLSearchParams(window.location.search)
 const form = useForm({
     search_data: params.get('search_data') || '',
-    statut: params.get('statut') || '',
+    statut_numerisation: params.get('statut_numerisation') || '',
     date_start: params.get('date_start') || '',
     date_end: params.get('date_end') || ''
 })
 
 // URL dans l'historique
 function updateURL() {
-    const params = new URLSearchParams()
-    if (form.search_data) params.set('search_data', form.search_data)
-    if (form.statut) params.set('statut', form.statut)
-    if (form.date_start) params.set('date_start', form.date_start)
-    if (form.date_end) params.set('date_end', form.date_end)
-    if (page.value) params.set('page', page.value)
-    // history.pushState(null, '', `?${params.toString()}`)
+    const paramsExport = new URLSearchParams()
+    if (form.search_data) paramsExport.set('search_data', form.search_data)
+    if (form.statut_numerisation && form.statut_numerisation !== '0') paramsExport.set('statut_numerisation', form.statut_numerisation)
+    if (form.date_start) paramsExport.set('date_start', form.date_start)
+    if (form.date_end) paramsExport.set('date_end', form.date_end)
+    if (page.value && page.value !== 1) paramsExport.set('page', page.value)
+    
+    const newUrl = `${window.location.pathname}${paramsExport.toString() ? '?' + paramsExport.toString() : ''}`
+    queryString.value = paramsExport.toString() ? '?' + paramsExport.toString() : ''
+    window.history.replaceState(window.history.state, '', newUrl)
 }
 
 function navigateNumerisationNew() {
@@ -246,7 +249,7 @@ async function fetchDossiers() {
     url.searchParams.set('filtre_per_page', perPage.value)
     url.searchParams.set('page', page.value)
     if (form.search_data) url.searchParams.set('search_data', form.search_data)
-    if (form.statut) url.searchParams.set('statut', form.statut)
+    if (form.statut_numerisation && form.statut_numerisation !== '0') url.searchParams.set('statut_numerisation', form.statut_numerisation)
     if (form.date_start) url.searchParams.set('date_start', form.date_start)
     if (form.date_end) url.searchParams.set('date_end', form.date_end)
 
@@ -274,7 +277,7 @@ window.addEventListener('popstate', () => {
     const params = new URLSearchParams(window.location.search)
     // page.value = parseInt(params.get('page')) || 1
     form.search_data = params.get('search_data') || ''
-    form.statut = params.get('statut') || ''
+    form.statut_numerisation = params.get('statut_numerisation') || ''
     form.date_start = params.get('date_start') || ''
     form.date_end = params.get('date_end') || ''
     fetchDossiers()
@@ -282,7 +285,8 @@ window.addEventListener('popstate', () => {
 
 // Initial fetch
 onMounted(() => {
-    // page.value = parseInt(params.get('page')) || 1
+    const paramsInit = new URLSearchParams(window.location.search)
+    page.value = parseInt(paramsInit.get('page')) || 1
     fetchDossiers()
 })
 </script>

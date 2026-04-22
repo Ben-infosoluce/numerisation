@@ -299,7 +299,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ref, computed, onMounted } from "vue";
-import { returnBack } from "/resources/js/composable/fonction.js";
+// import { returnBack } from "/resources/js/composable/fonction.js";
 import {
     MoveRight,
     MoveLeft,
@@ -342,6 +342,15 @@ onMounted(() => {
         fetchEntreprise(props.dossier.r_dossier_vehicule.entreprise_id);
     }
 });
+
+const returnBack = () => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.toString()) {
+        router.visit('/numerisation?' + params.toString())
+    } else {
+        window.history.back()
+    }
+}
 const motifRejet = ref("");
 const entreprise = ref(null);
 

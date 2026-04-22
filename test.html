@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+                height: 100vh;
+                margin: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                /* Fond coloré pour bien voir la transparence */
+                background: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+                font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            }
+
+            .inspector-card {
+                min-width: 420px;
+                padding: 14px 18px;
+                border-radius: 12px;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+                position: relative;
+
+                /* --- MODIFICATIONS ICI --- */
+                background-color: rgba(255, 255, 255, 0.35);
+                /* Plus transparent (0.35 au lieu de 0.75) */
+                backdrop-filter: blur(12px);
+                /* Flou renforcé pour compenser */
+                -webkit-backdrop-filter: blur(12px);
+            }
+
+            .toolbar {
+                display: flex;
+                gap: 8px;
+                margin-bottom: 15px;
+            }
+
+            .btn {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 10px;
+                background: rgba(255, 255, 255, 0.5);
+                border: 1px solid rgba(0, 0, 0, 0.05);
+                border-radius: 5px;
+                font-size: 13px;
+                color: #333;
+                cursor: pointer;
+            }
+
+            .line {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-top: 6px;
+                color: #1a1a1a;
+            }
+
+            .file-path {
+                font-size: 14px;
+                font-weight: 500;
+            }
+
+            .tag-name {
+                font-size: 14px;
+                color: #444;
+            }
+
+            .icon {
+                opacity: 0.6;
+                font-style: normal;
+            }
+
+            .close-x {
+                position: absolute;
+                top: 15px;
+                right: 18px;
+                font-size: 18px;
+                color: #666;
+                cursor: pointer;
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <div class="inspector-card">
+            <span class="close-x">×</span>
+
+            <div class="toolbar">
+                <button class="btn"><i>↗</i> Open</button>
+                <button class="btn"><i>❐</i> Info</button>
+            </div>
+
+            <div class="line">
+                <span class="icon">📄</span>
+                <span class="file-path">app/layouts/partials/MenuFront.vue:8:28</span>
+            </div>
+
+            <div class="line">
+                <span class="icon">⑃</span>
+                <span class="tag-name">div</span>
+            </div>
+        </div>
+
+    </body>
+
+</html>

@@ -19,6 +19,7 @@ use Intervention\Image\ImageManager;
 use setasign\Fpdi\Fpdi;
 use App\Helpers\apiHelpers;
 use App\Services\FtpUploadService;
+use Carbon\Carbon;
 
 
 // ✅ Pour les règles de validation
@@ -110,10 +111,8 @@ class NumerisationController extends Controller
         if ($date_start && $date_end) {
             // On s'assure que ce sont des dates valides
             try {
-                // $start = Carbon::parse($date_start)->startOfDay();
-                //  $end = Carbon::parse($date_end)->endOfDay();
-                $start = $date_start;
-                $end = $date_end;
+                $start = Carbon::parse($date_start)->startOfDay();
+                $end = Carbon::parse($date_end)->endOfDay();
 
                 $query->whereBetween('date_creation', [$start, $end]);
             } catch (\Exception $e) {
@@ -127,7 +126,7 @@ class NumerisationController extends Controller
             'dossiers' => $dossiers,
             'filtres' => $request->only(
                 "filtre_per_page",
-                "statut",
+                "statut_numerisation",
                 "search_data",
                 "filtre_type",
                 "date_start",

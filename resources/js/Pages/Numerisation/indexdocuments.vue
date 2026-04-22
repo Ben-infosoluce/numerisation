@@ -62,6 +62,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { router } from '@inertiajs/vue3'
 import { MoveLeft, ReceiptText } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -108,7 +109,12 @@ const cleanedDocuments = computed(() =>
 )
 
 const retunBack = () => {
-    window.history.back()
+    const params = new URLSearchParams(window.location.search)
+    if (params.toString()) {
+        router.visit('/numerisation?' + params.toString())
+    } else {
+        window.history.back()
+    }
 }
 
 function formatDate(date) {

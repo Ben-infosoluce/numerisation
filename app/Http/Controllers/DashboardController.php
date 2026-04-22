@@ -312,22 +312,46 @@ class DashboardController extends Controller
         $enAttente = DB::table('dossiers')
             ->where($dateCreationFilter)
             ->where(function ($query) {
-            $query->where('statut_numerisation', '!=', 2)
-                ->orWhereNull('statut_numerisation');
-        })
+                $query->where('statut_numerisation', '!=', 2)
+                    ->orWhereNull('statut_numerisation');
+            })
             ->count();
 
         /**
-         * 📊 4️⃣ GRAPH — NUMÉRISÉS PAR SITE
+         * 4️⃣ DOSSIERS AVEC IMMATRICULATION
+         */
+        $dossiersImmatricules = DB::table('dossiers')
+            ->join('vehicules', 'dossiers.id_vehicule', '=', 'vehicules.id')
+            ->where($dateCreationFilter)
+            ->whereNotNull('vehicules.num_immatriculation')
+            ->count();
+
+        /**
+         * 📊 5️⃣ GRAPH — NUMÉRISÉS PAR SITE
          */
         $numerisesParSite = DB::table('dossiers')
             ->leftJoin('sites', 'dossiers.id_site', '=', 'sites.id')
             ->where($dateNumerisationFilter)
             ->where('dossiers.statut_numerisation', 2)
             ->select(
-            DB::raw("COALESCE(sites.nom_site, 'GLOBAL') as nom_site"),
-            DB::raw('COUNT(*) as total')
-        )
+                DB::raw("COALESCE(sites.nom_site, 'GLOBAL') as nom_site"),
+                DB::raw('COUNT(*) as total')
+            )
+            ->groupBy('nom_site')
+            ->get();
+
+        /**
+         * 📊 6️⃣ GRAPH — IMMATRICULÉS PAR SITE
+         */
+        $immatriculesParSite = DB::table('dossiers')
+            ->join('vehicules', 'dossiers.id_vehicule', '=', 'vehicules.id')
+            ->leftJoin('sites', 'dossiers.id_site', '=', 'sites.id')
+            ->where($dateCreationFilter)
+            ->whereNotNull('vehicules.num_immatriculation')
+            ->select(
+                DB::raw("COALESCE(sites.nom_site, 'GLOBAL') as nom_site"),
+                DB::raw('COUNT(*) as total')
+            )
             ->groupBy('nom_site')
             ->get();
 
@@ -337,8 +361,10 @@ class DashboardController extends Controller
             'total_enrolement' => $totalEnrolement,
             'dossiers_numerises' => $dossiersNumerises,
             'en_attente' => $enAttente,
+            'dossiers_immatricules' => $dossiersImmatricules,
             // Graph
             'numerises_par_site' => $numerisesParSite,
+            'immatricules_par_site' => $immatriculesParSite,
         ]);
     }
 }

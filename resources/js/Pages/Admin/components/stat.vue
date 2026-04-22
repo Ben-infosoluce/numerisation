@@ -22,27 +22,40 @@
         </div>
 
         <!-- KPI CARDS -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-white p-5 rounded-xl shadow-sm">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
                 <p class="text-sm text-gray-500">Total enrôlement</p>
                 <h2 class="text-2xl font-bold">{{ stats.Total }}</h2>
             </div>
 
-            <div class="bg-white p-5 rounded-xl shadow-sm">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
                 <p class="text-sm text-gray-500">Dossiers numérisés</p>
-                <h2 class="text-2xl font-bold">{{ stats.numerises }}</h2>
+                <h2 class="text-2xl font-bold text-green-600">{{ stats.numerises }}</h2>
             </div>
 
-            <div class="bg-white p-5 rounded-xl shadow-sm">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
                 <p class="text-sm text-gray-500">En attente</p>
-                <h2 class="text-2xl font-bold">{{ stats.attente }}</h2>
+                <h2 class="text-2xl font-bold text-orange-500">{{ stats.attente }}</h2>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                <p class="text-sm text-gray-500">Dossiers immatriculés</p>
+                <h2 class="text-2xl font-bold text-blue-600">{{ stats.immatricules }}</h2>
             </div>
         </div>
 
-        <!-- GRAPH -->
-        <div class="bg-white p-6 rounded-xl shadow-sm">
-            <h2 class="text-lg font-semibold mb-4">Dossiers numérisés par site</h2>
-            <div class="w-full h-[400px]" ref="dossierChart"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- GRAPH: NUMÉRISÉS -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <h2 class="text-lg font-semibold mb-4 text-green-700">Dossiers numérisés par site</h2>
+                <div class="w-full h-[400px]" ref="dossierChart"></div>
+            </div>
+
+            <!-- GRAPH: IMMATRICULÉS -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <h2 class="text-lg font-semibold mb-4 text-blue-700">Dossiers immatriculés par site</h2>
+                <div class="w-full h-[400px]" ref="immatriculeChart"></div>
+            </div>
         </div>
 
     </div>
@@ -57,16 +70,19 @@ import DateRangePicker from "@/components/ui/DateRangePicker.vue";
 
 // 🔹 Refs
 const dossierChart = ref(null);
+const immatriculeChart = ref(null);
 const periode = ref("today");
 
 // 🔹 Data
 const stats = ref({
     Total: 0,
     numerises: 0,
-    attente: 0
+    attente: 0,
+    immatricules: 0
 });
 
 const dossierData = ref([]);
+const immatriculeData = ref([]);
 
 const form = reactive({
     dateRange: null,
@@ -74,8 +90,9 @@ const form = reactive({
     date_end: null
 });
 
-// 🔹 Chart instance
-let chartInstance = null;
+// 🔹 Chart instances
+let dossierChartInstance = null;
+let immatriculeChartInstance = null;
 
 // 🔹 FETCH DATA
 const fetchData = async () => {
@@ -90,11 +107,18 @@ const fetchData = async () => {
         stats.value = {
             Total: res.data.total_enrolement || 0,
             numerises: res.data.dossiers_numerises || 0,
-            attente: res.data.en_attente || 0
+            attente: res.data.en_attente || 0,
+            immatricules: res.data.dossiers_immatricules || 0
         };
 
-        // Graph
+        // Graph 1: Numérisés
         dossierData.value = res.data.numerises_par_site.map(s => ({
+            name: s.nom_site,
+            value: s.total
+        }));
+
+        // Graph 2: Immatriculés
+        immatriculeData.value = res.data.immatricules_par_site.map(s => ({
             name: s.nom_site,
             value: s.total
         }));
@@ -104,58 +128,61 @@ const fetchData = async () => {
     }
 };
 
-// 🔹 INIT CHART
-const initChart = () => {
+// 🔹 INIT CHARTS
+const initCharts = () => {
+    initDossierChart();
+    initImmatriculeChart();
+};
+
+const initDossierChart = () => {
     if (!dossierChart.value) return;
-
-    // destroy ancien chart
-    if (chartInstance) {
-        chartInstance.dispose();
-    }
-
-    chartInstance = echarts.init(dossierChart.value);
-
-    chartInstance.setOption({
-        title: {
-            text: `Total: ${dossierData.value.reduce((sum, d) => sum + d.value, 0)}`,
-            left: "center"
-        },
-        tooltip: {
-            trigger: "axis",
-            axisPointer: { type: "shadow" }
-        },
-        xAxis: {
-            type: "category",
-            data: dossierData.value.map(d => d.name),
-            axisLabel: { rotate: 45 }
-        },
-        yAxis: {
-            type: "value"
-        },
+    if (dossierChartInstance) dossierChartInstance.dispose();
+    
+    dossierChartInstance = echarts.init(dossierChart.value);
+    dossierChartInstance.setOption({
+        title: { text: `Total: ${dossierData.value.reduce((sum, d) => sum + d.value, 0)}`, left: "center" },
+        tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+        xAxis: { type: "category", data: dossierData.value.map(d => d.name), axisLabel: { rotate: 45 } },
+        yAxis: { type: "value" },
         series: [{
             name: "Dossiers numérisés",
             type: "bar",
             data: dossierData.value.map(d => d.value),
-            itemStyle: {
-                color: "#3b82f6"
-            },
-            label: {
-                show: true,
-                position: "top",
-                fontWeight: "bold"
-            }
+            itemStyle: { color: "#10b981" }, // Green
+            label: { show: true, position: "top", fontWeight: "bold" }
         }]
     });
+};
 
-    window.addEventListener("resize", () => {
-        chartInstance.resize();
+const initImmatriculeChart = () => {
+    if (!immatriculeChart.value) return;
+    if (immatriculeChartInstance) immatriculeChartInstance.dispose();
+    
+    immatriculeChartInstance = echarts.init(immatriculeChart.value);
+    immatriculeChartInstance.setOption({
+        title: { text: `Total: ${immatriculeData.value.reduce((sum, d) => sum + d.value, 0)}`, left: "center" },
+        tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+        xAxis: { type: "category", data: immatriculeData.value.map(d => d.name), axisLabel: { rotate: 45 } },
+        yAxis: { type: "value" },
+        series: [{
+            name: "Dossiers immatriculés",
+            type: "bar",
+            data: immatriculeData.value.map(d => d.value),
+            itemStyle: { color: "#3b82f6" }, // Blue
+            label: { show: true, position: "top", fontWeight: "bold" }
+        }]
     });
 };
+
+window.addEventListener("resize", () => {
+    if (dossierChartInstance) dossierChartInstance.resize();
+    if (immatriculeChartInstance) immatriculeChartInstance.resize();
+});
 
 const onFilterChange = async () => {
     await fetchData();
     await nextTick();
-    initChart();
+    initCharts();
 };
 
 // 🔹 WATCH période
@@ -167,7 +194,7 @@ watch(periode, async () => {
     }
     await fetchData();
     await nextTick();
-    initChart();
+    initCharts();
 });
 
 // 🔹 MOUNT

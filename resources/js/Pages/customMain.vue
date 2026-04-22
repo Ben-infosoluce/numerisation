@@ -25,10 +25,9 @@
                             <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuGroup>
-                                <!-- <DropdownMenuItem>
-                                    <User class="mr-2 h-4 w-4" />
-                                    <span @click="goToArchive()">Archives</span>
-                                </DropdownMenuItem> -->
+                                <DropdownMenuItem @click="openProfileModal">
+                                    <User class="mr-2 h-4 w-4" /> Profil
+                                </DropdownMenuItem>
                                 <DropdownMenuItem @click="openPasswordModal">
                                     <Settings class="mr-2 h-4 w-4" />
                                     <span>Mot de passe</span>
@@ -89,6 +88,45 @@
                 </AlertDialogContent>
             </AlertDialog>
         </div>
+
+        <Dialog v-model:open="isProfileModalOpen">
+            <DialogContent class="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>Profil Utilisateur</DialogTitle>
+                    <DialogDescription>
+                        Détails de votre compte utilisateur.
+                    </DialogDescription>
+                </DialogHeader>
+                <div class="grid gap-4 py-4">
+                    <div class="grid grid-cols-4 items-center gap-4">
+                        <Label class="text-right font-bold">Nom</Label>
+                        <div class="col-span-3">{{ user?.nom }}</div>
+                    </div>
+                    <div class="grid grid-cols-4 items-center gap-4">
+                        <Label class="text-right font-bold">Prénom</Label>
+                        <div class="col-span-3">{{ user?.prenom }}</div>
+                    </div>
+                    <div class="grid grid-cols-4 items-center gap-4">
+                        <Label class="text-right font-bold">Site</Label>
+                        <div class="col-span-3">{{ user?.r_user_site?.nom_site }}</div>
+                    </div>
+                    <div class="grid grid-cols-4 items-center gap-4">
+                        <Label class="text-right font-bold">Rôle</Label>
+                        <div class="col-span-3">
+                            <Badge variant="secondary">
+                                {{ user?.r_user_role?.nom_role || 'Utilisateur' }}
+                            </Badge>
+                        </div>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button type="button" variant="outline" @click="isProfileModalOpen = false">
+                        Fermer
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
         <div class="mt-4 flex-1 overflow-y-auto p-6">
             <slot></slot>
         </div>
@@ -109,6 +147,8 @@ import {
 import { LogOut, Settings, User, LockKeyhole } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import Menu from "./Menu.vue";
 import axios from "axios";
 // import { LockKeyhole } from "lucide-vue-next";
@@ -124,6 +164,15 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 import { Toaster, toast } from "vue-sonner";
 
 import { useCaisseStore } from "@/stores/mainStore";
@@ -142,12 +191,17 @@ const currentCaisse = ref(null);
 const montantRecuCheck = ref(true);
 const montantSaisieCaisse = ref("");
 const openPassword = ref(false);
+const isProfileModalOpen = ref(false);
 const oldPassword = ref("");
 const newPassword = ref("");
 const confirmPassword = ref("");
 
 const openPasswordModal = () => {
     openPassword.value = true;
+};
+
+const openProfileModal = () => {
+    isProfileModalOpen.value = true;
 };
 
 const handlePassword = async () => {
@@ -207,6 +261,7 @@ function logout() {
             console.error("Erreur lors de la déconnexion :", error);
         });
 }
+    const user = usePage().props.auth_user?.data;
 
 function getInitials() {
     const user = usePage().props.auth_user?.data;
